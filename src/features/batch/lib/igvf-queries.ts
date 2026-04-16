@@ -15,7 +15,12 @@
 // Types
 // ============================================================================
 
-export type DatasetId = "base_editing" | "encode_mpra" | "finemapped_glgc";
+export type DatasetId =
+  | "base_editing"
+  | "crispri"
+  | "encode_mpra"
+  | "unc_mpra"
+  | "finemapped_glgc";
 
 export interface DatasetDef {
   id: DatasetId;
@@ -30,8 +35,8 @@ export interface DatasetDef {
   sigDescription: string;
   /** Column for z-score/logFC forest (null if N/A) */
   zColumn: string | null;
-  /** Columns for Miami dual-pval plot (null if N/A) */
-  pvalColumns: { upper: string; lower: string } | null;
+  /** Columns for Miami / crosshair plots. `lower` may be null for single-p datasets. */
+  pvalColumns: { upper: string; lower: string | null } | null;
 }
 
 export const DATASET_DEFS: DatasetDef[] = [
@@ -46,14 +51,35 @@ export const DATASET_DEFS: DatasetDef[] = [
     pvalColumns: { upper: "efflux_neglog_p", lower: "uptake_neglog_p" },
   },
   {
+    id: "crispri",
+    label: "CRISPRi",
+    mode: "within",
+    sigColumn: "crispri_sig",
+    presenceColumn: "has_crispri",
+    sigDescription: "BEAN CRISPRi — predicted functional",
+    zColumn: null,
+    pvalColumns: { upper: "crispri_neglog_p", lower: null },
+  },
+  {
     id: "encode_mpra",
     label: "ENCODE MPRA",
     mode: "within",
     sigColumn: "encode_mpra_sig",
     presenceColumn: "has_encode_mpra",
-    sigDescription: "MPRA FDR q < 0.05",
-    zColumn: null,
-    pvalColumns: null,
+    sigDescription:
+      "ENCODE MPRA — either allele significant or allelic skew significant",
+    zColumn: "encode_mpra_log2fc",
+    pvalColumns: { upper: "encode_mpra_neglog_q", lower: null },
+  },
+  {
+    id: "unc_mpra",
+    label: "UNC MPRA",
+    mode: "within",
+    sigColumn: "unc_mpra_sig",
+    presenceColumn: "has_unc_mpra",
+    sigDescription: "UNC MPRA FDR q < 0.05",
+    zColumn: "unc_mpra_log2fc",
+    pvalColumns: { upper: "unc_mpra_neglog_q", lower: null },
   },
   {
     id: "finemapped_glgc",
@@ -100,6 +126,7 @@ export interface SummaryRow {
   predFunc: number;
   predSig: number;
   apc: number;
+  macie: number;
   chrombpnet: number;
   clinvar: number;
   liver_cv2f: number;
@@ -114,6 +141,7 @@ export interface SummaryRow {
 
 export interface UpsetRow {
   pred_apc: boolean;
+  pred_macie: boolean;
   pred_chrombpnet: boolean;
   pred_clinvar: boolean;
   pred_liver_cv2f: boolean;
@@ -221,6 +249,31 @@ export interface BaselineRate {
   rate: number;
 }
 
+export interface SharedSigPoint {
+  vid: string;
+  variantVcf: string;
+  chrom: number;
+  position: number;
+  genes: string[];
+  beNegLogP: number | null;
+  crispriNegLogP: number | null;
+  beSig: boolean;
+  crispriSig: boolean;
+}
+
+export interface SharedBeCrispri {
+  /** Count of variants present in BOTH base editing and CRISPRi experiments. */
+  totalOverlap: number;
+  /** Variants significant in both (the "44 variants" from PPTX slide 53). */
+  bothSigCount: number;
+  /** Variants significant in BE only. */
+  beOnlySigCount: number;
+  /** Variants significant in CRISPRi only. */
+  crispriOnlySigCount: number;
+  /** Up to 500 points, sorted: both-sig first, then by max(-log10 p) */
+  points: SharedSigPoint[];
+}
+
 export interface CrossDatasetData {
   afBoxplot: AfBoxplotRow[];
   dhsSummary: DhsSummaryRow[];
@@ -231,12 +284,18 @@ export interface CrossDatasetData {
   /** Per-method prediction counts for the cohort (for baseline comparison) */
   cohortPredCounts: Record<string, number>;
   cohortTotal: number;
+  /** BE ∩ CRISPRi overlap (PPTX slides 53-54). Null when either dataset is absent. */
+  sharedBeCrispri: SharedBeCrispri | null;
 }
 
 /** Top-level report */
 export interface IgvfReportData {
   totalVariants: number;
   availableDatasets: DatasetId[];
+  /** Per-dataset overlap counts (including below-threshold datasets). */
+  datasetCounts: Record<DatasetId, number>;
+  /** Datasets with variants but below MIN_VARIANTS threshold (so UI can note them). */
+  skippedDatasets: Array<{ id: DatasetId; variantCount: number }>;
   reports: Partial<Record<DatasetId, DatasetReport>>;
   loadedTables: Array<{ label: string; rows: number }>;
   crossDataset: CrossDatasetData;
@@ -271,6 +330,7 @@ export const IGVF_BASELINE = {
 const PRED_METHODS = [
   ["Overall", "pred_overall"],
   ["aPC", "pred_apc"],
+  ["MACIE", "pred_macie"],
   ["ClinVar", "pred_clinvar"],
   ["liver_ASE", "pred_liver_ase"],
   ["ASE", "pred_ase"],
@@ -308,16 +368,150 @@ function bhAdjust(pvals: number[]): number[] {
 // SQL — Materialization
 // ============================================================================
 
-export const SQL_MATERIALIZE = `
+export type EncodeMpraSrc = "new" | "old" | "none";
+export type UncOligosSrc = "new" | "old" | "none";
+
+/**
+ * Build the analysis-table materialization SQL.
+ *
+ * Schema switching: the backend renamed/swapped parquets on 2026-04-16
+ *   - ENCODE MPRA: `mpra.parquet` (old) → `mpra_encode.parquet` (new, different
+ *     schema — raw p-values + pre-computed significance booleans)
+ *   - UNC MPRA:   new `mpra_unc.parquet` (same shape as the old `mpra.parquet`)
+ *   - UNC MPRA per-oligo: `mpra_oligos.parquet` (old) → `mpra_unc_oligos.parquet`
+ *   - CRISPRi:    new `crispri_bean.parquet`
+ *
+ * Already-completed cohorts keep old files, so both paths must work.
+ *
+ * `hasMacie` toggles reading from `v.macie.posterior_probability` — stubbed to
+ * 0/false for older FAVOR annotations that predate the MACIE rollout.
+ */
+export function buildMaterializeSQL(opts: {
+  hasMacie: boolean;
+  encodeMpraSrc: EncodeMpraSrc;
+  hasMpraUnc: boolean;
+  uncOligosSrc: UncOligosSrc;
+  hasCrispri: boolean;
+}): string {
+  const macieScore = opts.hasMacie
+    ? `COALESCE(v.macie.posterior_probability, 0)`
+    : `0`;
+  const macieFlag = opts.hasMacie
+    ? `COALESCE(v.macie.posterior_probability > 0.90, false)`
+    : `false`;
+
+  // ENCODE MPRA — pick source
+  let encodeJoin: string;
+  let encodeHas: string;
+  let encodeQ: string;
+  let encodeNegLogQ: string;
+  let encodeLog2fc: string;
+  let encodeSigPrecomputed: string;
+  if (opts.encodeMpraSrc === "new") {
+    encodeJoin = `LEFT JOIN mpra_encode me ON me.vid = v.vid`;
+    encodeHas = `me.vid IS NOT NULL`;
+    // Raw p-values (0-1). We carry both the raw min-p (for analyses) and the -log10 (for display).
+    encodeQ = `LEAST(me.a_padj, me.b_padj, me.skew_fdr)`;
+    encodeNegLogQ = `CASE WHEN LEAST(me.a_padj, me.b_padj, me.skew_fdr) > 0
+                          THEN -log10(LEAST(me.a_padj, me.b_padj, me.skew_fdr))
+                          ELSE NULL END`;
+    // Allelic skew = a - b (meaningful effect size per variant)
+    encodeLog2fc = `(me.a_log2fc - me.b_log2fc)`;
+    encodeSigPrecomputed = `COALESCE(me.a_significant OR me.b_significant OR me.skew_significant, false)`;
+  } else if (opts.encodeMpraSrc === "old") {
+    encodeJoin = `LEFT JOIN mpra mp ON mp.vid = v.vid`;
+    encodeHas = `mp.vid IS NOT NULL`;
+    // Old schema already has -log10(q) in the column
+    encodeQ = `CASE WHEN mp.neg_log10_qvalue > 0 THEN pow(10, -mp.neg_log10_qvalue) ELSE NULL END`;
+    encodeNegLogQ = `mp.neg_log10_qvalue`;
+    encodeLog2fc = `mp.log2fc`;
+    // Threshold pass will derive this from encode_mpra_neglog_q >= 1.30103
+    encodeSigPrecomputed = `false`;
+  } else {
+    encodeJoin = `-- ENCODE MPRA not loaded`;
+    encodeHas = `false`;
+    encodeQ = `CAST(NULL AS DOUBLE)`;
+    encodeNegLogQ = `CAST(NULL AS DOUBLE)`;
+    encodeLog2fc = `CAST(NULL AS DOUBLE)`;
+    encodeSigPrecomputed = `false`;
+  }
+
+  // UNC MPRA — only the new parquet source exists
+  const uncJoin = opts.hasMpraUnc
+    ? `LEFT JOIN mpra_unc mu ON mu.vid = v.vid`
+    : `-- mpra_unc not loaded`;
+  const uncHas = opts.hasMpraUnc ? `mu.vid IS NOT NULL` : `false`;
+  const uncQ = opts.hasMpraUnc ? `mu.neg_log10_qvalue` : `CAST(NULL AS DOUBLE)`;
+  const uncLog2fc = opts.hasMpraUnc ? `mu.log2fc` : `CAST(NULL AS DOUBLE)`;
+
+  // UNC MPRA per-oligo aggregation — pick source
+  let uncOligosCTE: string;
+  let uncOligosJoin: string;
+  let uncOligosHas: string;
+  let uncOligosQ: string;
+  let uncOligosLog2fc: string;
+  if (opts.uncOligosSrc === "new") {
+    uncOligosCTE = `, mpra_agg AS (
+  SELECT vid, MAX(neg_log10_qvalue) as max_qval, MAX(log2fc) as max_log2fc
+  FROM mpra_unc_oligos GROUP BY vid
+)`;
+    uncOligosJoin = `LEFT JOIN mpra_agg mo ON mo.vid = v.vid`;
+    uncOligosHas = `mo.vid IS NOT NULL`;
+    uncOligosQ = `mo.max_qval`;
+    uncOligosLog2fc = `mo.max_log2fc`;
+  } else if (opts.uncOligosSrc === "old") {
+    uncOligosCTE = `, mpra_agg AS (
+  SELECT vid, MAX(neg_log10_qvalue) as max_qval, MAX(log2fc) as max_log2fc
+  FROM mpra_oligos GROUP BY vid
+)`;
+    uncOligosJoin = `LEFT JOIN mpra_agg mo ON mo.vid = v.vid`;
+    uncOligosHas = `mo.vid IS NOT NULL`;
+    uncOligosQ = `mo.max_qval`;
+    uncOligosLog2fc = `mo.max_log2fc`;
+  } else {
+    uncOligosCTE = ``;
+    uncOligosJoin = `-- mpra oligos not loaded`;
+    uncOligosHas = `false`;
+    uncOligosQ = `CAST(NULL AS DOUBLE)`;
+    uncOligosLog2fc = `CAST(NULL AS DOUBLE)`;
+  }
+
+  // CRISPRi (BEAN)
+  const crispriJoin = opts.hasCrispri
+    ? `LEFT JOIN crispri_bean cr ON cr.vid = v.vid`
+    : `-- crispri_bean not loaded`;
+  const crispriHas = opts.hasCrispri ? `cr.vid IS NOT NULL` : `false`;
+  const crispriP = opts.hasCrispri
+    ? `cr.bean_p_betabinom`
+    : `CAST(NULL AS DOUBLE)`;
+  const crispriFdr = opts.hasCrispri
+    ? `cr.bean_p_betabinom_fdr`
+    : `CAST(NULL AS DOUBLE)`;
+  const crispriNegLogP = opts.hasCrispri
+    ? `CASE WHEN cr.bean_p_betabinom > 0 THEN -log10(cr.bean_p_betabinom) ELSE NULL END`
+    : `CAST(NULL AS DOUBLE)`;
+  // Significance = backend's pre-computed call (calibrated, not raw FDR < 0.05)
+  const crispriSigPrecomputed = opts.hasCrispri
+    ? `COALESCE(cr.predicted_functional, false)`
+    : `false`;
+  const crispriAseEvidence = opts.hasCrispri
+    ? `COALESCE(cr.allele_specific_evidence, false)`
+    : `false`;
+  const crispriLiverAse = opts.hasCrispri
+    ? `COALESCE(cr.liver_allele_specific_evidence, false)`
+    : `false`;
+  const crispriHepg2Peak = opts.hasCrispri
+    ? `COALESCE(cr.in_hepg2_atac_peak, false)`
+    : `false`;
+  const crispriCatlasPeak = opts.hasCrispri
+    ? `COALESCE(cr.in_catlas_peak_hepatocyte, false)`
+    : `false`;
+
+  return `
 CREATE OR REPLACE TABLE analysis AS
 WITH tland_p95 AS (
   SELECT COALESCE(APPROX_QUANTILE(tland_liver, 0.95), 999) as val FROM tland_liver
 ),
-mpra_agg AS (
-  SELECT vid, MAX(neg_log10_qvalue) as max_qval, MAX(log2fc) as max_log2fc
-  FROM mpra_oligos GROUP BY vid
-),
--- Pre-aggregate tables with duplicate VIDs to prevent row multiplication
 dhs_mgh_agg AS (
   SELECT vid, MAX(DHS_promoter) as DHS_promoter, MAX(DHS_enhancer) as DHS_enhancer
   FROM dhs_overlap_mgh GROUP BY vid
@@ -325,27 +519,45 @@ dhs_mgh_agg AS (
 dhs_unc_agg AS (
   SELECT vid, MAX(DHS_promoter) as DHS_promoter, MAX(DHS_enhancer) as DHS_enhancer
   FROM dhs_overlap_unc GROUP BY vid
-)
+)${uncOligosCTE}
 SELECT
   v.vid, v.variant_vcf, v.chromosome, v.position,
 
   -- Dataset presence flags
   be.vid IS NOT NULL     as has_be,
-  mp.vid IS NOT NULL     as has_encode_mpra,
+  ${encodeHas}           as has_encode_mpra,
+  ${uncHas}              as has_unc_mpra,
+  ${crispriHas}          as has_crispri,
   fm.vid IS NOT NULL     as has_finemapped_glgc,
-  mo.vid IS NOT NULL     as has_mpra_oligos,
+  ${uncOligosHas}        as has_mpra_oligos,
 
   -- Base editing raw p-values (FDR in JS)
   be.ldl_efflux_p as efflux_p, be.ldl_uptake_p as uptake_p,
   be.ldl_efflux_mu_z_adj as efflux_z, be.ldl_uptake_mu_z_adj as uptake_z,
 
-  -- ENCODE MPRA raw score
-  mp.neg_log10_qvalue as encode_mpra_qvalue,
-  mp.log2fc as encode_mpra_log2fc,
+  -- ENCODE MPRA (new schema: raw p-values + pre-computed booleans; old schema: -log10 q)
+  ${encodeQ}          as encode_mpra_qvalue,
+  ${encodeNegLogQ}    as encode_mpra_neglog_q,
+  ${encodeLog2fc}     as encode_mpra_log2fc,
+  ${encodeSigPrecomputed} as encode_mpra_sig_precomputed,
 
-  -- MPRA oligos aggregated score
-  mo.max_qval as mpra_oligos_qvalue,
-  mo.max_log2fc as mpra_oligos_log2fc,
+  -- UNC MPRA (variant-level; separate pipeline from UNC per-oligo)
+  ${uncQ}             as unc_mpra_neglog_q,
+  ${uncLog2fc}        as unc_mpra_log2fc,
+
+  -- UNC MPRA per-oligo rollup (max over oligos per variant)
+  ${uncOligosQ}       as mpra_oligos_qvalue,
+  ${uncOligosLog2fc}  as mpra_oligos_log2fc,
+
+  -- CRISPRi (BEAN) — raw p + FDR; backend pre-computed predicted_functional
+  ${crispriP}         as crispri_p,
+  ${crispriFdr}       as crispri_fdr,
+  ${crispriNegLogP}   as crispri_neglog_p,
+  ${crispriSigPrecomputed} as crispri_sig_precomputed,
+  ${crispriAseEvidence}    as pred_crispri_allele_specific,
+  ${crispriLiverAse}       as pred_crispri_liver_ase,
+  ${crispriHepg2Peak}      as in_hepg2_atac_peak,
+  ${crispriCatlasPeak}     as in_catlas_peak_hepatocyte,
 
   -- Finemapped GLGC
   fm.ln_bf as finemapped_ln_bf,
@@ -362,6 +574,11 @@ SELECT
     COALESCE(v.apc.epigenetics_active, 0), COALESCE(v.apc.epigenetics_repressed, 0),
     COALESCE(v.apc.epigenetics_transcription, 0), COALESCE(v.apc.transcription_factor, 0)
   ) as apc_max_score,
+
+  -- MACIE (posterior probability of functionality; threshold tuned so cohort rate
+  -- matches IGVF 10M baseline ~4.16%; adjust if baseline calibration changes)
+  ${macieScore} as macie_score,
+  ${macieFlag}  as pred_macie,
 
   cb.min_pval as chrombpnet_pval, cb.max_abs_logfc as chrombpnet_logfc,
   cv.cv2f_liver as cv2f_liver_score, cv.cv2f_global_max as cv2f_global_score,
@@ -421,13 +638,16 @@ LEFT JOIN cv2f cv              ON cv.vid = v.vid
 LEFT JOIN ase a                ON a.vid = v.vid
 LEFT JOIN tland_liver tl       ON tl.vid = v.vid
 LEFT JOIN finemapped_glgc fm   ON fm.vid = v.vid
-LEFT JOIN dhs_mgh_agg dmgh    ON dmgh.vid = v.vid
-LEFT JOIN dhs_unc_agg dunc    ON dunc.vid = v.vid
-LEFT JOIN mpra mp              ON mp.vid = v.vid
-LEFT JOIN mpra_agg mo          ON mo.vid = v.vid
+LEFT JOIN dhs_mgh_agg dmgh     ON dmgh.vid = v.vid
+LEFT JOIN dhs_unc_agg dunc     ON dunc.vid = v.vid
+${encodeJoin}
+${uncJoin}
+${uncOligosJoin}
+${crispriJoin}
 CROSS JOIN tland_p95 tp95
 WHERE v.status = 'FOUND'
 `;
+}
 
 // ============================================================================
 // Post-materialization: FDR + threshold passes
@@ -491,11 +711,29 @@ const SQL_THRESHOLD_PASS = `
   ALTER TABLE analysis ADD COLUMN IF NOT EXISTS efflux_neglog_p DOUBLE;
   ALTER TABLE analysis ADD COLUMN IF NOT EXISTS uptake_neglog_p DOUBLE;
   ALTER TABLE analysis ADD COLUMN IF NOT EXISTS encode_mpra_sig BOOLEAN DEFAULT false;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS unc_mpra_sig BOOLEAN DEFAULT false;
+  ALTER TABLE analysis ADD COLUMN IF NOT EXISTS crispri_sig BOOLEAN DEFAULT false;
   ALTER TABLE analysis ADD COLUMN IF NOT EXISTS finemapped_sig BOOLEAN DEFAULT false;
 
+  -- ENCODE MPRA significance:
+  --   new schema has pre-computed booleans (encode_mpra_sig_precomputed = a|b|skew)
+  --   old schema has -log10(q), threshold at >= 1.30103 (q <= 0.05)
   UPDATE analysis SET
-    encode_mpra_sig = COALESCE(encode_mpra_qvalue >= 1.30103, false)
+    encode_mpra_sig =
+      COALESCE(encode_mpra_sig_precomputed, false)
+      OR COALESCE(encode_mpra_neglog_q >= 1.30103, false)
   WHERE has_encode_mpra;
+
+  -- UNC MPRA: -log10(q) >= 1.30103 (q <= 0.05)
+  UPDATE analysis SET
+    unc_mpra_sig = COALESCE(unc_mpra_neglog_q >= 1.30103, false)
+  WHERE has_unc_mpra;
+
+  -- CRISPRi: use backend's pre-computed predicted_functional boolean
+  -- (calibrated, not raw bean_p_betabinom_fdr < 0.05 which is too strict)
+  UPDATE analysis SET
+    crispri_sig = COALESCE(crispri_sig_precomputed, false)
+  WHERE has_crispri;
 
   UPDATE analysis SET
     finemapped_sig = COALESCE(finemapped_ln_bf > 0, false)
@@ -503,7 +741,8 @@ const SQL_THRESHOLD_PASS = `
 
   -- Compute pred_overall for ALL variants (FDR step only sets it for BE variants)
   UPDATE analysis SET pred_overall = (
-    pred_apc OR pred_chrombpnet OR pred_clinvar OR pred_liver_cv2f OR pred_cv2f
+    pred_apc OR pred_macie OR pred_chrombpnet OR pred_clinvar
+    OR pred_liver_cv2f OR pred_cv2f
     OR pred_liver_ase OR pred_ase OR pred_liver_tland
   ) WHERE NOT pred_overall;
 `;
@@ -550,7 +789,9 @@ SELECT variant_category as category,
   count(*) as total, count(*) FILTER (WHERE ${sigCol}) as exp_sig,
   count(*) FILTER (WHERE pred_overall) as pred_func,
   count(*) FILTER (WHERE pred_overall AND ${sigCol}) as pred_sig,
-  count(*) FILTER (WHERE pred_apc) as apc, count(*) FILTER (WHERE pred_chrombpnet) as chrombpnet,
+  count(*) FILTER (WHERE pred_apc) as apc,
+  count(*) FILTER (WHERE pred_macie) as macie,
+  count(*) FILTER (WHERE pred_chrombpnet) as chrombpnet,
   count(*) FILTER (WHERE pred_clinvar) as clinvar,
   count(*) FILTER (WHERE pred_liver_cv2f) as liver_cv2f, count(*) FILTER (WHERE pred_cv2f) as cv2f,
   count(*) FILTER (WHERE pred_liver_ase) as liver_ase, count(*) FILTER (WHERE pred_ase) as ase,
@@ -596,7 +837,7 @@ function geneListSQL(where: string): string {
 }
 
 function prRawSQL(where: string, sigCol: string): string {
-  return `SELECT ${sigCol} as is_sig, apc_max_score,
+  return `SELECT ${sigCol} as is_sig, apc_max_score, macie_score,
   CASE WHEN chrombpnet_pval IS NOT NULL THEN -log10(NULLIF(chrombpnet_pval, 0)) ELSE NULL END as chrombpnet_score,
   cv2f_liver_score, cv2f_global_score, ase_liver_score, ase_overall_score, tland_liver_score
 FROM analysis ${where}`;
@@ -872,6 +1113,7 @@ interface PRRawRow {
 
 const PR_METHODS: Array<{ name: string; scoreKey: string }> = [
   { name: "aPC", scoreKey: "apc_max_score" },
+  { name: "MACIE", scoreKey: "macie_score" },
   { name: "chromBPnet", scoreKey: "chrombpnet_score" },
   { name: "liver_cV2F", scoreKey: "cv2f_liver_score" },
   { name: "cV2F", scoreKey: "cv2f_global_score" },
@@ -922,15 +1164,19 @@ export function variantListSQL(whereBody: string): string {
   return `SELECT
     vid, variant_vcf, chromosome, position, genes, region_type, consequence, variant_category, exonic_category,
     encode_ccre, cage_category, encode_element,
-    pred_overall, pred_apc, pred_chrombpnet, pred_clinvar,
+    pred_overall, pred_apc, pred_macie, pred_chrombpnet, pred_clinvar,
     pred_liver_cv2f, pred_cv2f, pred_liver_ase, pred_ase, pred_liver_tland,
     COALESCE(either_sig, false) as either_sig,
     COALESCE(encode_mpra_sig, false) as encode_mpra_sig,
+    COALESCE(unc_mpra_sig, false) as unc_mpra_sig,
+    COALESCE(crispri_sig, false) as crispri_sig,
     COALESCE(finemapped_sig, false) as finemapped_sig,
     efflux_p, uptake_p, efflux_fdr, uptake_fdr, efflux_z, uptake_z,
-    encode_mpra_qvalue, encode_mpra_log2fc,
+    encode_mpra_qvalue, encode_mpra_neglog_q, encode_mpra_log2fc,
+    unc_mpra_neglog_q, unc_mpra_log2fc,
+    crispri_p, crispri_fdr, crispri_neglog_p,
     finemapped_ln_bf,
-    apc_max_score, chrombpnet_pval,
+    apc_max_score, macie_score, chrombpnet_pval,
     cv2f_liver_score, cv2f_global_score,
     ase_liver_score, ase_overall_score,
     tland_liver_score,
@@ -963,6 +1209,7 @@ function numOrNull(v: unknown): number | null {
 function parseUpsetRows(rows: Record<string, unknown>[]): UpsetRow[] {
   return rows.map((r) => ({
     pred_apc: !!r.pred_apc,
+    pred_macie: !!r.pred_macie,
     pred_chrombpnet: !!r.pred_chrombpnet,
     pred_clinvar: !!r.pred_clinvar,
     pred_liver_cv2f: !!r.pred_liver_cv2f,
@@ -983,6 +1230,7 @@ function parseSummaryRows(rows: Record<string, unknown>[]): SummaryRow[] {
     predFunc: num(r.pred_func),
     predSig: num(r.pred_sig),
     apc: num(r.apc),
+    macie: num(r.macie),
     chrombpnet: num(r.chrombpnet),
     clinvar: num(r.clinvar),
     liver_cv2f: num(r.liver_cv2f),
@@ -1187,6 +1435,18 @@ FROM (
 ) unpivoted
 GROUP BY population, sig_group ORDER BY population, sig_group`;
 
+const SQL_SHARED_BE_CRISPRI = `
+SELECT vid, variant_vcf, chromosome, position, genes,
+  GREATEST(COALESCE(efflux_neglog_p, 0), COALESCE(uptake_neglog_p, 0)) as be_neglog_p,
+  crispri_neglog_p,
+  COALESCE(either_sig, false) as be_sig,
+  COALESCE(crispri_sig, false) as crispri_sig
+FROM analysis
+WHERE has_be AND has_crispri
+ORDER BY (CAST(COALESCE(either_sig, false) AS INT) + CAST(COALESCE(crispri_sig, false) AS INT)) DESC,
+         GREATEST(COALESCE(efflux_neglog_p, 0), COALESCE(uptake_neglog_p, 0)) + COALESCE(crispri_neglog_p, 0) DESC
+LIMIT 500`;
+
 async function buildCrossDataset(
   query: QueryFn,
   baselineRates: BaselineRate[] | null,
@@ -1194,14 +1454,16 @@ async function buildCrossDataset(
   const predCountSQL = `SELECT count(*) as total, ${PRED_METHODS.map(
     ([, col]) => `count(*) FILTER (WHERE ${col}) as ${col}`,
   ).join(", ")} FROM analysis`;
-  const [dhsR, gwasR, colocR, finemapR, afR, predR] = await Promise.all([
-    query(SQL_DHS_SUMMARY),
-    query(SQL_GWAS_CONTEXT),
-    query(SQL_COLOC_SUMMARY),
-    query(SQL_FINEMAP_SUMMARY),
-    query(SQL_AF_BOXPLOT_CROSS),
-    query(predCountSQL),
-  ]);
+  const [dhsR, gwasR, colocR, finemapR, afR, predR, sharedR] =
+    await Promise.all([
+      query(SQL_DHS_SUMMARY),
+      query(SQL_GWAS_CONTEXT),
+      query(SQL_COLOC_SUMMARY),
+      query(SQL_FINEMAP_SUMMARY),
+      query(SQL_AF_BOXPLOT_CROSS),
+      query(predCountSQL),
+      query(SQL_SHARED_BE_CRISPRI),
+    ]);
 
   const dhsSummary: DhsSummaryRow[] = dhsR.rows.map((r) => ({
     source: r.source as string,
@@ -1256,6 +1518,39 @@ async function buildCrossDataset(
   const cohortPredCounts: Record<string, number> = {};
   for (const [, col] of PRED_METHODS) cohortPredCounts[col] = num(pr[col]);
 
+  // BE ∩ CRISPRi shared significance panel
+  let sharedBeCrispri: SharedBeCrispri | null = null;
+  if (sharedR.rows.length > 0) {
+    let bothSig = 0;
+    let beOnly = 0;
+    let crispriOnly = 0;
+    const points: SharedSigPoint[] = sharedR.rows.map((r) => {
+      const beSig = !!r.be_sig;
+      const crispriSig = !!r.crispri_sig;
+      if (beSig && crispriSig) bothSig++;
+      else if (beSig) beOnly++;
+      else if (crispriSig) crispriOnly++;
+      return {
+        vid: String(r.vid),
+        variantVcf: (r.variant_vcf as string) ?? "",
+        chrom: num(r.chromosome),
+        position: num(r.position),
+        genes: Array.isArray(r.genes) ? (r.genes as string[]) : [],
+        beNegLogP: numOrNull(r.be_neglog_p),
+        crispriNegLogP: numOrNull(r.crispri_neglog_p),
+        beSig,
+        crispriSig,
+      };
+    });
+    sharedBeCrispri = {
+      totalOverlap: sharedR.rows.length,
+      bothSigCount: bothSig,
+      beOnlySigCount: beOnly,
+      crispriOnlySigCount: crispriOnly,
+      points,
+    };
+  }
+
   return {
     afBoxplot,
     dhsSummary,
@@ -1265,15 +1560,87 @@ async function buildCrossDataset(
     baselineRates,
     cohortPredCounts,
     cohortTotal,
+    sharedBeCrispri,
   };
+}
+
+/**
+ * Probe whether a dotted field path under `variants` resolves at bind time.
+ * Used to gate SQL that reads struct fields which may not exist in older
+ * FAVOR outputs (e.g., MACIE was rolled out mid-2026).
+ */
+async function probeVariantField(
+  query: QueryFn,
+  path: string,
+): Promise<boolean> {
+  try {
+    await query(`SELECT v.${path} FROM variants v LIMIT 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Probe whether a table was loaded (enrichment loader stubs missing files with a single `vid` column). */
+async function probeTableNonEmpty(
+  query: QueryFn,
+  table: string,
+): Promise<boolean> {
+  try {
+    const r = await query(`SELECT count(*) as n FROM ${table}`);
+    return num(r.rows[0]?.n) > 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function generateIgvfReport(
   query: QueryFn,
   loadedTables: Array<{ label: string; rows: number }>,
 ): Promise<IgvfReportData> {
+  // Step 0: probe optional inputs that gate MACIE / MPRA / CRISPRi SQL.
+  // Backend renamed parquets on 2026-04-16 so we support both schemas:
+  //   new: mpra_encode, mpra_unc, mpra_unc_oligos, crispri_bean
+  //   old: mpra, mpra_oligos (pre-rework cohorts)
+  const [
+    hasMacie,
+    hasMpraEncode,
+    hasMpraOld,
+    hasMpraUnc,
+    hasMpraUncOligos,
+    hasMpraOligosOld,
+    hasCrispri,
+  ] = await Promise.all([
+    probeVariantField(query, "macie.posterior_probability"),
+    probeTableNonEmpty(query, "mpra_encode"),
+    probeTableNonEmpty(query, "mpra"),
+    probeTableNonEmpty(query, "mpra_unc"),
+    probeTableNonEmpty(query, "mpra_unc_oligos"),
+    probeTableNonEmpty(query, "mpra_oligos"),
+    probeTableNonEmpty(query, "crispri_bean"),
+  ]);
+
+  const encodeMpraSrc: EncodeMpraSrc = hasMpraEncode
+    ? "new"
+    : hasMpraOld
+      ? "old"
+      : "none";
+  const uncOligosSrc: UncOligosSrc = hasMpraUncOligos
+    ? "new"
+    : hasMpraOligosOld
+      ? "old"
+      : "none";
+
   // Step 1: materialize
-  await query(SQL_MATERIALIZE);
+  await query(
+    buildMaterializeSQL({
+      hasMacie,
+      encodeMpraSrc,
+      hasMpraUnc,
+      uncOligosSrc,
+      hasCrispri,
+    }),
+  );
 
   // Step 2: base editing FDR (requires JS BH adjustment)
   await query(SQL_ASSIGN_IDX);
@@ -1306,20 +1673,23 @@ export async function generateIgvfReport(
   // Step 3: threshold pass for non-BE datasets
   await query(SQL_THRESHOLD_PASS);
 
-  // Step 4: auto-detect available datasets
-  const countsR = await query(`SELECT
-    count(*) as total,
-    count(*) FILTER (WHERE has_be) as n_be,
-    count(*) FILTER (WHERE has_encode_mpra) as n_encode_mpra,
-    count(*) FILTER (WHERE has_finemapped_glgc) as n_finemapped
-  FROM analysis`);
-  const c = countsR.rows[0];
+  // Step 4: auto-detect available datasets (data-driven from DATASET_DEFS).
+  const countsSQL = `SELECT count(*) as total, ${DATASET_DEFS.map(
+    (d) => `count(*) FILTER (WHERE ${d.presenceColumn}) as n_${d.id}`,
+  ).join(", ")} FROM analysis`;
+  const countsR = await query(countsSQL);
+  const c = countsR.rows[0] ?? {};
 
   const MIN_VARIANTS = 10;
+  const datasetCounts = {} as Record<DatasetId, number>;
   const available: DatasetId[] = [];
-  if (num(c?.n_be) >= MIN_VARIANTS) available.push("base_editing");
-  if (num(c?.n_encode_mpra) >= MIN_VARIANTS) available.push("encode_mpra");
-  if (num(c?.n_finemapped) >= MIN_VARIANTS) available.push("finemapped_glgc");
+  const skippedDatasets: Array<{ id: DatasetId; variantCount: number }> = [];
+  for (const d of DATASET_DEFS) {
+    const n = num(c[`n_${d.id}`]);
+    datasetCounts[d.id] = n;
+    if (n >= MIN_VARIANTS) available.push(d.id);
+    else if (n > 0) skippedDatasets.push({ id: d.id, variantCount: n });
+  }
 
   // Step 5: build sub-reports + cross-dataset in parallel
   const reports: Partial<Record<DatasetId, DatasetReport>> = {};
@@ -1337,8 +1707,10 @@ export async function generateIgvfReport(
   ]);
 
   return {
-    totalVariants: num(c?.total),
+    totalVariants: num(c.total),
     availableDatasets: available,
+    datasetCounts,
+    skippedDatasets,
     reports,
     loadedTables,
     crossDataset,

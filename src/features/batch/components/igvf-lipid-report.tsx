@@ -35,6 +35,7 @@ import {
   type IgvfReportData,
   type LogfcRow,
   type MiamiPoint,
+  type SharedBeCrispri,
   type SummaryRow,
   type UpsetRow,
   type VariantFilter,
@@ -52,7 +53,6 @@ const ENRICHMENT_LABELS = [
   "coloc",
   "finemapped_glgc",
   "base_editing",
-  "mpra",
   "chrombpnet_liver",
   "tland_liver",
   "cv2f",
@@ -61,6 +61,13 @@ const ENRICHMENT_LABELS = [
   "dhs_overlap_unc",
   "finemapped_topmed",
   "finemapped_ukb",
+  // new (post 2026-04-16 rework)
+  "mpra_encode",
+  "mpra_unc",
+  "mpra_unc_oligos",
+  "crispri_bean",
+  // kept for cohorts processed before the rework (old schema)
+  "mpra",
   "mpra_oligos",
 ] as const;
 
@@ -98,6 +105,105 @@ function fmtPct(rate: number): string {
   if (pct >= 1) return `${pct.toFixed(1)}%`;
   if (pct >= 0.01) return `${pct.toFixed(2)}%`;
   return `${pct.toExponential(1)}%`;
+}
+
+function assertNever(x: never): never {
+  throw new Error(`Unexpected case: ${String(x)}`);
+}
+
+type SortDir = "asc" | "desc";
+
+/** Local-state sortable table helper. Sorts numeric/string rows by a key. */
+function useSortableRows<T>(
+  rows: T[],
+  defaultKey: keyof T,
+  defaultDir: SortDir = "desc",
+): {
+  rows: T[];
+  sortKey: keyof T;
+  sortDir: SortDir;
+  setSort: (key: keyof T) => void;
+} {
+  const [sortKey, setSortKey] = useState<keyof T>(defaultKey);
+  const [sortDir, setSortDir] = useState<SortDir>(defaultDir);
+  const sorted = useMemo(() => {
+    const out = [...rows];
+    out.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === "number" && typeof bv === "number")
+        return sortDir === "asc" ? av - bv : bv - av;
+      const as = String(av);
+      const bs = String(bv);
+      return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
+    });
+    return out;
+  }, [rows, sortKey, sortDir]);
+  const setSort = useCallback(
+    (key: keyof T) => {
+      if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      else {
+        setSortKey(key);
+        setSortDir("desc");
+      }
+    },
+    [sortKey],
+  );
+  return { rows: sorted, sortKey, sortDir, setSort };
+}
+
+/** Clickable <th> that shows a caret when this column is the active sort key. */
+function SortHeader<T>({
+  col,
+  label,
+  align,
+  sortKey,
+  sortDir,
+  onClick,
+}: {
+  col: keyof T;
+  label: string;
+  align?: "left" | "right";
+  sortKey: keyof T;
+  sortDir: SortDir;
+  onClick: (col: keyof T) => void;
+}) {
+  const active = col === sortKey;
+  return (
+    <th
+      className={cn(
+        "py-2 px-2 text-muted-foreground font-medium",
+        align === "left" ? "text-left" : "text-right",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onClick(col)}
+        className={cn(
+          "inline-flex items-center gap-1 hover:text-foreground",
+          active && "text-foreground",
+          align === "right" ? "flex-row-reverse" : "",
+        )}
+      >
+        {label}
+        <span aria-hidden className="text-[9px] leading-none">
+          {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+/** Short explanatory caption rendered beneath a chart. */
+function PlotCaption({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
+      {children}
+    </p>
+  );
 }
 
 // ============================================================================
@@ -156,6 +262,18 @@ function toManhattan(points: MiamiPoint[], mode: MiamiMode): ManhattanPoint[] {
   return filtered.map((pt) => {
     let color: string, group: string, symbol: string;
     switch (mode) {
+      case "functional": {
+        color = pt.predicted_functional ? "#eab308" : "#6b21a8";
+        symbol =
+          pt.encode_ccre === "Promoter"
+            ? "square"
+            : pt.encode_ccre === "Enhancer"
+              ? "triangle-up"
+              : "circle";
+        const ccre = pt.encode_ccre === "None" ? "No cCRE" : pt.encode_ccre;
+        group = `${ccre} · ${pt.predicted_functional ? "Func." : "Not func."}`;
+        break;
+      }
       case "exonic": {
         const cat = pt.exonic_category ?? "Unknown";
         color = EXONIC_COLORS[cat] ?? "#737373";
@@ -185,18 +303,8 @@ function toManhattan(points: MiamiPoint[], mode: MiamiMode): ManhattanPoint[] {
         symbol = "circle";
         break;
       }
-      default: {
-        color = pt.predicted_functional ? "#eab308" : "#6b21a8";
-        symbol =
-          pt.encode_ccre === "Promoter"
-            ? "square"
-            : pt.encode_ccre === "Enhancer"
-              ? "triangle-up"
-              : "circle";
-        const ccre = pt.encode_ccre === "None" ? "No cCRE" : pt.encode_ccre;
-        group = `${ccre} · ${pt.predicted_functional ? "Func." : "Not func."}`;
-        break;
-      }
+      default:
+        assertNever(mode);
     }
     return {
       chrom: pt.chrom,
@@ -299,6 +407,7 @@ const COL_FILTER_SQL: Record<string, (sig: string) => string> = {
   predFunc: () => "pred_overall",
   predSig: (s) => `pred_overall AND ${s}`,
   apc: () => "pred_apc",
+  macie: () => "pred_macie",
   chrombpnet: () => "pred_chrombpnet",
   clinvar: () => "pred_clinvar",
   liver_cv2f: () => "pred_liver_cv2f",
@@ -316,6 +425,7 @@ const COL_FILTER_SQL: Record<string, (sig: string) => string> = {
 const COL_TO_BASELINE: Record<string, string> = {
   predFunc: "pred_overall",
   apc: "pred_apc",
+  macie: "pred_macie",
   chrombpnet: "pred_chrombpnet",
   clinvar: "pred_clinvar",
   liver_cv2f: "pred_liver_cv2f",
@@ -346,6 +456,7 @@ function SummaryTable({
     { k: "predFunc", l: "Pred.Func" },
     { k: "predSig", l: "Pred+Sig" },
     { k: "apc", l: "aPC" },
+    { k: "macie", l: "MACIE" },
     { k: "chrombpnet", l: "CBPNet" },
     { k: "clinvar", l: "ClinVar" },
     { k: "liver_cv2f", l: "lv cV2F" },
@@ -360,6 +471,7 @@ function SummaryTable({
   // Hide method columns that are all zero — they add noise. Show footnote.
   const methodKeys = [
     "apc",
+    "macie",
     "chrombpnet",
     "clinvar",
     "liver_cv2f",
@@ -554,6 +666,7 @@ function SummaryTable({
 
 const UPSET_METHODS_ALL = [
   { key: "pred_apc" as const, label: "aPC" },
+  { key: "pred_macie" as const, label: "MACIE" },
   { key: "pred_chrombpnet" as const, label: "chromBPnet" },
   { key: "pred_clinvar" as const, label: "ClinVar" },
   { key: "pred_liver_cv2f" as const, label: "liver cV2F" },
@@ -993,28 +1106,6 @@ function GeneZoom({ miami, gene }: { miami: MiamiPoint[]; gene: string }) {
         config={PLOTLY_CONFIG_STATIC}
         style={{ width: "100%" }}
       />
-      <div className="flex items-center gap-4 justify-center text-[10px] text-muted-foreground mt-4">
-        {(
-          [
-            ["TP", "Func + Sig"],
-            ["FP", "Func + Not sig"],
-            ["FN", "Not func + Sig"],
-            ["TN", "Not func + Not sig"],
-          ] as const
-        ).map(([key, label]) => (
-          <span key={key} className="flex items-center gap-1">
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{
-                backgroundColor: GENE_ZOOM_COLORS[key],
-                border:
-                  key === "TP" || key === "FN" ? "1.5px solid #171717" : "none",
-              }}
-            />
-            {label}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -1025,11 +1116,9 @@ function GeneZoom({ miami, gene }: { miami: MiamiPoint[]; gene: string }) {
 
 function DatasetReportView({
   report: dr,
-  totalVariants: _totalVariants,
   onFilterClick,
 }: {
   report: DatasetReport;
-  totalVariants: number;
   onFilterClick?: (f: VariantFilter) => void;
 }) {
   const [miamiMode, setMiamiMode] = useState<MiamiMode>("functional");
@@ -1086,9 +1175,10 @@ function DatasetReportView({
   }, [dr, upsetMode]);
 
   const hasMiami = dr.miami.length > 0 && dr.dataset.pvalColumns;
+  const hasLogfc = dr.dataset.zColumn !== null && logfcData.length > 0;
 
-  // Auto-generated narrative
-  const narrative = useMemo(() => {
+  // Stats + narrative derived from forest rows.
+  const { bestMethod, sigMethods, narrative } = useMemo(() => {
     const sigPct =
       dr.variantCount > 0
         ? ((dr.sigCount / dr.variantCount) * 100).toFixed(1)
@@ -1100,7 +1190,7 @@ function DatasetReportView({
       activeMethods.length > 0
         ? [...activeMethods].sort((a, b) => b.or - a.or)[0]
         : null;
-    const _sigMethods = activeMethods.filter((r) => r.significant);
+    const sig = activeMethods.filter((r) => r.significant);
     const nonSig = activeMethods
       .filter((r) => !r.significant)
       .map((r) => r.method);
@@ -1120,22 +1210,85 @@ function DatasetReportView({
     if (nonSig.length > 0 && nonSig.length <= 4) {
       text += ` ${nonSig.join(", ")} do${nonSig.length === 1 ? "es" : ""} not reach significance in this cohort.`;
     }
-    return text;
+    return { bestMethod: best, sigMethods: sig, narrative: text };
   }, [dr]);
 
+  const sigPct =
+    dr.variantCount > 0 ? (dr.sigCount / dr.variantCount) * 100 : 0;
+  const labelPrefix = dr.dataset.label;
+
   return (
-    <div className="space-y-8">
-      {/* Narrative summary */}
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        {narrative}
-      </p>
+    <div
+      id={`dataset-${dr.dataset.id}`}
+      className="space-y-8 scroll-mt-16 print:break-before-page print:break-inside-avoid"
+    >
+      {/* Dataset header — orients the reader, rescues sigMethods + best method */}
+      <header className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">
+              {labelPrefix}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {dr.dataset.sigDescription}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <Stat label="Variants" value={dr.variantCount.toLocaleString()} />
+            <Stat
+              label="Significant"
+              value={`${dr.sigCount.toLocaleString()} (${sigPct.toFixed(1)}%)`}
+            />
+            {bestMethod && (
+              <Stat
+                label="Best marginal"
+                value={`${bestMethod.method} OR ${bestMethod.or.toFixed(1)}`}
+              />
+            )}
+          </div>
+        </div>
+        {sigMethods.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-3">
+            <span className="text-[11px] text-muted-foreground">
+              Significant methods:
+            </span>
+            {sigMethods.map((m) => (
+              <span
+                key={m.method}
+                className="px-2 py-0.5 text-[11px] rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700"
+              >
+                {m.method}
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+          {narrative}
+        </p>
+      </header>
+
+      {/* Experimental overview — crosshair scatter matching PPTX slide 11/20/28 per dataset */}
+      {dr.dataset.pvalColumns && dr.miami.length > 0 && (
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+          <SectionTitle subtitle="Each point is a variant. Dashed red lines mark the significance threshold (−log₁₀ 0.05) — outlined points are experimentally significant.">
+            {labelPrefix} — Predictions vs Experimental p-values
+          </SectionTitle>
+          <ExperimentalOverviewPlot dr={dr} />
+          <PlotCaption>
+            Colors: TP = predicted &amp; significant (gold, outlined) · FP =
+            predicted, not significant (pale) · FN = significant but not
+            predicted (purple, outlined) · TN = neither (grey). A good predictor
+            concentrates points in the TP quadrant.
+          </PlotCaption>
+        </section>
+      )}
 
       {/* 1. Summary Tables — orient the user first */}
       {dr.summary.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
           <SummaryTable
             data={dr.summary}
-            title="Variant Summary by Category"
+            title={`${labelPrefix} — Variant Summary by Category`}
             showBaseline
             onFilterClick={onFilterClick}
             filterCtx={{
@@ -1148,7 +1301,7 @@ function DatasetReportView({
             <div className="mt-6">
               <SummaryTable
                 data={dr.summaryCage}
-                title="Noncoding by CAGE Category"
+                title={`${labelPrefix} — Noncoding by CAGE Category`}
                 onFilterClick={onFilterClick}
                 filterCtx={{
                   baseWhere: datasetWhere
@@ -1163,23 +1316,7 @@ function DatasetReportView({
         </section>
       )}
 
-      {/* 2. Marginal Model — univariate ORs */}
-      {marginalData.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
-          <SectionTitle
-            subtitle={`${dr.dataset.sigDescription}. Each method tested independently (2×2 table).`}
-          >
-            Marginal Model — {dr.dataset.label}
-          </SectionTitle>
-          <ForestPlot
-            data={marginalData}
-            title={`${dr.dataset.label} (${dr.sigCount} significant of ${dr.variantCount})`}
-            xLabel="Marginal OR (95% CI)"
-          />
-        </section>
-      )}
-
-      {/* 3. Joint Model — multivariate logistic regression */}
+      {/* 2. Joint Model — multivariate logistic regression (PPTX slide order: Joint before Marginal) */}
       {jointData &&
         jointData.length > 0 &&
         (() => {
@@ -1188,15 +1325,21 @@ function DatasetReportView({
               ?.filter((r) => r.or === 1 && r.orLo === 1 && r.orHi === 1)
               .map((r) => r.method) ?? [];
           return (
-            <section className="rounded-lg border border-border bg-card p-4">
+            <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
               <SectionTitle subtitle="Ridge-regularized logistic regression. Shows independent predictive value when controlling for all other methods.">
-                Joint Model — {dr.dataset.label}
+                {labelPrefix} — Joint Model
               </SectionTitle>
               <ForestPlot
                 data={jointData}
-                title={`${dr.dataset.label} (${dr.sigCount} significant of ${dr.variantCount})`}
+                title={`${labelPrefix} (${dr.sigCount} significant of ${dr.variantCount})`}
                 xLabel="Joint OR (95% CI)"
               />
+              <PlotCaption>
+                OR &gt; 1 (right of the dashed line) = method retains
+                independent association with significance after controlling for
+                the other methods. 95% CIs from ridge-regularized Fisher
+                information.
+              </PlotCaption>
               {excluded.length > 0 && (
                 <p className="text-[10px] text-muted-foreground mt-2">
                   Excluded (fewer than 3 predicted variants):{" "}
@@ -1207,29 +1350,55 @@ function DatasetReportView({
           );
         })()}
 
-      {/* logFC Forest (base editing only) */}
-      {logfcData.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+      {/* 3. Marginal Model — univariate ORs */}
+      {marginalData.length > 0 && (
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+          <SectionTitle
+            subtitle={`${dr.dataset.sigDescription}. Each method tested independently (2×2 table).`}
+          >
+            {labelPrefix} — Marginal Model
+          </SectionTitle>
+          <ForestPlot
+            data={marginalData}
+            title={`${labelPrefix} (${dr.sigCount} significant of ${dr.variantCount})`}
+            xLabel="Marginal OR (95% CI)"
+          />
+          <PlotCaption>
+            Odds ratio with 95% CI from Haldane-corrected 2×2 contingency. OR
+            &gt; 1 (right of the dashed line) = enrichment in experimentally
+            significant variants.
+          </PlotCaption>
+        </section>
+      )}
+
+      {/* 3b. logFC Forest — only datasets with a z-score column (e.g. base editing) */}
+      {hasLogfc && (
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
           <SectionTitle subtitle="Mean Z-score among variants predicted functional by each method. Negative Z = reduced LDL efflux (expected direction for functional variants).">
-            Mean Z-score by Method
+            {labelPrefix} — Mean Z-score by Method
           </SectionTitle>
           <ForestPlot
             data={logfcData}
-            title="Efflux Z-score"
+            title="Effect-size Z"
             xLabel="Mean Z-score (95% CI)"
             refLine={0}
             logX={false}
           />
+          <PlotCaption>
+            Tests whether predicted-functional variants shift the continuous
+            experimental effect size away from 0, complementing the binary
+            significance tests above.
+          </PlotCaption>
         </section>
       )}
 
-      {/* 4. Recall + Precision bar charts */}
+      {/* 4. Recall */}
       {recallData.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
           <SectionTitle
             subtitle={`Recall (sensitivity) — proportion of ${dr.sigCount} significant variants captured by each method. Wilson 95% CIs.`}
           >
-            Recall — {dr.dataset.label}
+            {labelPrefix} — Recall
           </SectionTitle>
           <ForestPlot
             data={recallData}
@@ -1238,12 +1407,17 @@ function DatasetReportView({
             logX={false}
             refLine={null}
           />
+          <PlotCaption>
+            Recall = TP / (TP + FN). Counts next to each method: TP / (TP + FN).
+          </PlotCaption>
         </section>
       )}
+
+      {/* 5. Precision */}
       {precisionData.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
           <SectionTitle subtitle="Precision (PPV) — proportion of predicted-functional variants that are experimentally significant. Wilson 95% CIs.">
-            Precision — {dr.dataset.label}
+            {labelPrefix} — Precision
           </SectionTitle>
           <ForestPlot
             data={precisionData}
@@ -1252,25 +1426,64 @@ function DatasetReportView({
             logX={false}
             refLine={null}
           />
+          <PlotCaption>
+            Precision = TP / (TP + FP). Counts next to each method: TP / (TP +
+            FP).
+          </PlotCaption>
         </section>
       )}
 
-      {/* 5. PR Curves */}
+      {/* 6. Combined Recall + Precision side-by-side — matches final PPTX slide per dataset */}
+      {recallData.length > 0 && precisionData.length > 0 && (
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+          <SectionTitle subtitle="Recall and precision side-by-side so trade-offs are obvious at a glance.">
+            {labelPrefix} — Recall &amp; Precision
+          </SectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ForestPlot
+              data={recallData}
+              title="Recall"
+              xLabel="Recall (95% CI)"
+              logX={false}
+              refLine={null}
+            />
+            <ForestPlot
+              data={precisionData}
+              title="Precision"
+              xLabel="Precision (95% CI)"
+              logX={false}
+              refLine={null}
+            />
+          </div>
+          <PlotCaption>
+            A method with high recall but low precision flags most significant
+            variants but also many non-significant ones; high precision with low
+            recall is the opposite.
+          </PlotCaption>
+        </section>
+      )}
+
+      {/* 7. PR Curves */}
       {dr.prCurves.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
           <SectionTitle subtitle="Threshold sweep on continuous annotation scores. Methods with only binary flags appear as single points.">
-            Precision-Recall Curves
+            {labelPrefix} — PR Curves
           </SectionTitle>
           <PRCurve data={dr.prCurves} />
+          <PlotCaption>
+            Each curve = precision/recall as the score threshold is swept. A
+            curve hugging the top-right corner is best. Single dots = methods
+            with only a binary flag (no threshold to sweep).
+          </PlotCaption>
         </section>
       )}
 
-      {/* 6. Manhattan / locus plot */}
+      {/* 8. Manhattan / locus plot */}
       {hasMiami && (
-        <section className="rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center justify-between mb-3">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <SectionTitle subtitle="Genomic positions colored by annotation category.">
-              {dr.dataset.label} — Locus Plot
+              {labelPrefix} — Locus Plot
             </SectionTitle>
             <SegmentedControl
               value={miamiMode}
@@ -1284,11 +1497,14 @@ function DatasetReportView({
             />
           </div>
           {manhattanData.length > 0 ? (
-            <ManhattanPlot
-              data={manhattanData}
-              yLabel="−log₁₀(p-value)"
-              threshold={-Math.log10(0.05)}
-            />
+            <>
+              <ManhattanPlot
+                data={manhattanData}
+                yLabel="−log₁₀(p-value)"
+                threshold={-Math.log10(0.05)}
+              />
+              <ManhattanLegend mode={miamiMode} />
+            </>
           ) : (
             <p className="text-xs text-muted-foreground py-8 text-center">
               No variants in this mode.
@@ -1297,12 +1513,12 @@ function DatasetReportView({
         </section>
       )}
 
-      {/* 7. UpSet plot */}
+      {/* 9. UpSet plot */}
       {dr.upset.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center justify-between mb-3">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <SectionTitle subtitle="Method intersection matrix with experimental significance overlay.">
-              Method Overlap (UpSet)
+              {labelPrefix} — Method Overlap (UpSet)
             </SectionTitle>
             <SegmentedControl
               value={upsetMode}
@@ -1315,22 +1531,35 @@ function DatasetReportView({
               ]}
             />
           </div>
-          <UpsetPlot
-            data={upsetData}
-            methods={UPSET_METHODS_ALL}
-            onFilterClick={onFilterClick}
-            baseWhere={datasetWhere}
-          />
+          {upsetData.length > 0 ? (
+            <UpsetPlot
+              data={upsetData}
+              methods={UPSET_METHODS_ALL}
+              onFilterClick={onFilterClick}
+              baseWhere={datasetWhere}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground py-8 text-center">
+              No intersections in this mode.
+            </p>
+          )}
+          <PlotCaption>
+            Each column = a unique combination of prediction methods. Purple bar
+            = variants matching that combination; green overlay = those that
+            were experimentally significant. Dots below each bar mark which
+            methods are in the combination.
+          </PlotCaption>
         </section>
       )}
 
-      {/* 8. Per-gene zoom */}
+      {/* 10. Per-gene zoom */}
       {dr.geneList.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
           <SectionTitle subtitle="Select a gene to zoom into its region.">
-            Per-Gene Zoom
+            {labelPrefix} — Per-Gene Zoom
           </SectionTitle>
-          <div className="flex flex-wrap gap-1.5 mb-4">
+          <GeneZoomLegend />
+          <div className="flex flex-wrap gap-1.5 mb-4 max-h-24 overflow-y-auto">
             {dr.geneList.map((gene) => (
               <button
                 key={gene}
@@ -1372,6 +1601,98 @@ function DatasetReportView({
   );
 }
 
+/** Inline stat cell for the dataset header card. */
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+        {label}
+      </p>
+      <p className="text-sm font-semibold text-foreground tabular-nums">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/** Mode-specific legend for the locus (Manhattan) plot. */
+function ManhattanLegend({ mode }: { mode: MiamiMode }) {
+  const items: Array<{ color: string; label: string; outline?: boolean }> =
+    (() => {
+      switch (mode) {
+        case "functional":
+          return [
+            { color: "#eab308", label: "Predicted functional" },
+            { color: "#6b21a8", label: "Not predicted functional" },
+          ];
+        case "exonic":
+          return Object.entries(EXONIC_COLORS).map(([label, color]) => ({
+            color,
+            label,
+          }));
+        case "cage":
+          return Object.entries(CAGE_COLORS).map(([label, color]) => ({
+            color,
+            label,
+          }));
+        case "encode":
+          return Object.entries(ENCODE_ELEMENT_COLORS).map(
+            ([label, color]) => ({ color, label }),
+          );
+        default:
+          return assertNever(mode);
+      }
+    })();
+  return (
+    <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-muted-foreground">
+      {items.map((it) => (
+        <span key={it.label} className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-2.5 h-2.5 rounded-full"
+            style={{ backgroundColor: it.color }}
+          />
+          {it.label}
+        </span>
+      ))}
+      <span className="flex items-center gap-1.5">
+        <span
+          className="inline-block w-2.5 h-2.5 rounded-full border-2 border-foreground"
+          style={{ backgroundColor: "transparent" }}
+        />
+        Outlined = experimentally significant
+      </span>
+    </div>
+  );
+}
+
+/** Static legend for the gene-zoom TP/FP/FN/TN color scheme. */
+function GeneZoomLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 mb-3 text-[10px] text-muted-foreground">
+      {(
+        [
+          ["TP", "Pred. func + Sig"],
+          ["FP", "Pred. func + Not sig"],
+          ["FN", "Not pred. + Sig"],
+          ["TN", "Not pred. + Not sig"],
+        ] as const
+      ).map(([key, label]) => (
+        <span key={key} className="flex items-center gap-1">
+          <span
+            className="inline-block w-2.5 h-2.5 rounded-full"
+            style={{
+              backgroundColor: GENE_ZOOM_COLORS[key],
+              border:
+                key === "TP" || key === "FN" ? "1.5px solid #171717" : "none",
+            }}
+          />
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ============================================================================
 // Section 1: Cohort Overview
 // ============================================================================
@@ -1390,7 +1711,7 @@ function CohortOverview({
         Cohort Overview
       </SectionTitle>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="text-center">
           {onFilterClick ? (
             <button
@@ -1435,34 +1756,48 @@ function CohortOverview({
         <div className="space-y-1.5">
           {DATASET_DEFS.map((def) => {
             const r = report.reports[def.id];
+            const skipped = report.skippedDatasets?.find(
+              (s) => s.id === def.id,
+            );
             // enrichment mode: sigCount IS the overlap (finemapped count), variantCount is full cohort
-            const n =
-              def.mode === "enrichment"
-                ? (r?.sigCount ?? 0)
-                : (r?.variantCount ?? 0);
+            const n = r
+              ? def.mode === "enrichment"
+                ? r.sigCount
+                : r.variantCount
+              : (skipped?.variantCount ?? 0);
             const pct =
               report.totalVariants > 0
                 ? ((n / report.totalVariants) * 100).toFixed(1)
                 : "0";
+            const isSkipped = !r && skipped;
+            const hasData = n > 0;
             return (
               <div key={def.id} className="flex items-center gap-3 text-xs">
                 <span
                   className={cn(
                     "w-2 h-2 rounded-full",
-                    n > 0 ? "bg-primary" : "bg-muted",
+                    isSkipped
+                      ? "bg-amber-500"
+                      : hasData
+                        ? "bg-primary"
+                        : "bg-muted",
                   )}
                 />
                 <span
                   className={cn(
                     "w-32",
-                    n > 0
+                    hasData
                       ? "text-foreground font-medium"
                       : "text-muted-foreground",
                   )}
                 >
                   {def.label}
                 </span>
-                {n > 0 && onFilterClick ? (
+                {isSkipped ? (
+                  <span className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                    only {n} variant{n === 1 ? "" : "s"} — skipped (min 10)
+                  </span>
+                ) : hasData && onFilterClick ? (
                   <button
                     type="button"
                     onClick={() =>
@@ -1477,7 +1812,7 @@ function CohortOverview({
                   </button>
                 ) : (
                   <span className="text-muted-foreground tabular-nums">
-                    {n > 0 ? `${n.toLocaleString()} (${pct}%)` : "No overlap"}
+                    {hasData ? `${n.toLocaleString()} (${pct}%)` : "No overlap"}
                   </span>
                 )}
               </div>
@@ -1535,8 +1870,18 @@ function CrossDatasetContext({
   const hasFinemap = data.finemapSummary.length > 0;
   const hasAf = data.afBoxplot.length > 0;
   const hasBaseline = data.baselineRates && data.baselineRates.length > 0;
+  const hasSharedBeCrispri =
+    data.sharedBeCrispri != null && data.sharedBeCrispri.totalOverlap > 0;
 
-  if (!hasDhs && !hasGwas && !hasColoc && !hasFinemap && !hasAf && !hasBaseline)
+  if (
+    !hasDhs &&
+    !hasGwas &&
+    !hasColoc &&
+    !hasFinemap &&
+    !hasAf &&
+    !hasBaseline &&
+    !hasSharedBeCrispri
+  )
     return null;
 
   return (
@@ -1544,6 +1889,14 @@ function CrossDatasetContext({
       <h2 className="text-base font-semibold text-foreground pt-2">
         Cross-Dataset Context
       </h2>
+
+      {/* BE ∩ CRISPRi — matches PPTX slides 53-54 */}
+      {hasSharedBeCrispri && data.sharedBeCrispri && (
+        <SharedBeCrispriPanel
+          data={data.sharedBeCrispri}
+          onFilterClick={onFilterClick}
+        />
+      )}
 
       {/* AF Boxplot */}
       {hasAf && (
@@ -1700,7 +2053,7 @@ function CrossDatasetContext({
           <SectionTitle subtitle="Trait-tissue colocalization evidence for cohort variants.">
             Colocalization Summary
           </SectionTitle>
-          <div className="grid grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <Clickable
                 value={data.colocSummary.totalVariants}
@@ -1803,97 +2156,539 @@ function CrossDatasetContext({
 
       {/* Baseline Rates */}
       {hasBaseline && data.baselineRates && (
-        <section className="rounded-lg border border-border bg-card p-4">
-          <SectionTitle
-            subtitle={`Cohort prediction rates vs IGVF 10M background (${IGVF_BASELINE.totalVariants.toLocaleString()} variants).`}
-          >
-            Baseline Enrichment Comparison
-          </SectionTitle>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="py-2 px-2 text-left text-muted-foreground font-medium">
-                    Method
-                  </th>
-                  <th className="py-2 px-2 text-right text-muted-foreground font-medium">
-                    Cohort
-                  </th>
-                  <th className="py-2 px-2 text-right text-muted-foreground font-medium">
-                    Cohort Rate
-                  </th>
-                  <th className="py-2 px-2 text-right text-muted-foreground font-medium">
-                    10M Rate
-                  </th>
-                  <th className="py-2 px-2 text-right text-muted-foreground font-medium">
-                    Fold
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.baselineRates.map((b) => {
-                  const cohortN = data.cohortPredCounts?.[b.method] ?? 0;
-                  const cohortRate =
-                    (data.cohortTotal ?? 0) > 0
-                      ? cohortN / data.cohortTotal
-                      : 0;
-                  const fold = b.rate > 0 ? cohortRate / b.rate : 0;
-                  const foldColor =
-                    fold >= 2
-                      ? "text-emerald-600 font-semibold"
-                      : fold >= 1.5
-                        ? "text-emerald-600"
-                        : "text-foreground";
-                  return (
-                    <tr key={b.method} className="border-b border-border/50">
-                      <td className="py-1.5 px-2 text-foreground font-medium">
-                        {b.method.replace("pred_", "")}
-                      </td>
-                      <td className="py-1.5 px-2 text-right tabular-nums">
-                        {cohortN > 0 && onFilterClick ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onFilterClick({
-                                label: `${b.method.replace("pred_", "")} variants`,
-                                sql: b.method,
-                              })
-                            }
-                            className="text-primary hover:text-primary/80 underline decoration-primary/30 cursor-pointer"
-                          >
-                            {cohortN}
-                          </button>
-                        ) : (
-                          <span className="text-foreground">{cohortN}</span>
-                        )}
-                      </td>
-                      <td className="py-1.5 px-2 text-right tabular-nums text-foreground">
-                        {fmtPct(cohortRate)}
-                      </td>
-                      <td className="py-1.5 px-2 text-right tabular-nums text-muted-foreground">
-                        {fmtPct(b.rate)}
-                      </td>
-                      <td
-                        className={cn(
-                          "py-1.5 px-2 text-right tabular-nums",
-                          foldColor,
-                        )}
-                      >
-                        {fold >= 0.05
-                          ? `${fold.toFixed(1)}x`
-                          : fold > 0
-                            ? `${fold.toFixed(2)}x`
-                            : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <BaselineTable data={data} onFilterClick={onFilterClick} />
       )}
     </div>
+  );
+}
+
+// ============================================================================
+// Baseline Enrichment Comparison (sortable)
+// ============================================================================
+
+interface BaselineRow {
+  method: string;
+  cohortN: number;
+  cohortRate: number;
+  baselineRate: number;
+  fold: number;
+}
+
+function BaselineTable({
+  data,
+  onFilterClick,
+}: {
+  data: CrossDatasetData;
+  onFilterClick?: (f: VariantFilter) => void;
+}) {
+  const rows = useMemo<BaselineRow[]>(() => {
+    const total = data.cohortTotal ?? 0;
+    return (data.baselineRates ?? []).map((b) => {
+      const cohortN = data.cohortPredCounts?.[b.method] ?? 0;
+      const cohortRate = total > 0 ? cohortN / total : 0;
+      const fold = b.rate > 0 ? cohortRate / b.rate : 0;
+      return {
+        method: b.method.replace("pred_", ""),
+        cohortN,
+        cohortRate,
+        baselineRate: b.rate,
+        fold,
+      };
+    });
+  }, [data]);
+  const {
+    rows: sorted,
+    sortKey,
+    sortDir,
+    setSort,
+  } = useSortableRows<BaselineRow>(rows, "fold", "desc");
+
+  return (
+    <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+      <SectionTitle
+        subtitle={`Cohort prediction rates vs IGVF 10M background (${IGVF_BASELINE.totalVariants.toLocaleString()} variants). Click a column to sort.`}
+      >
+        Baseline Enrichment Comparison
+      </SectionTitle>
+      <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 bg-card z-10">
+            <tr className="border-b border-border">
+              <SortHeader<BaselineRow>
+                col="method"
+                label="Method"
+                align="left"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={setSort}
+              />
+              <SortHeader<BaselineRow>
+                col="cohortN"
+                label="Cohort"
+                align="right"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={setSort}
+              />
+              <SortHeader<BaselineRow>
+                col="cohortRate"
+                label="Cohort Rate"
+                align="right"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={setSort}
+              />
+              <SortHeader<BaselineRow>
+                col="baselineRate"
+                label="10M Rate"
+                align="right"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={setSort}
+              />
+              <SortHeader<BaselineRow>
+                col="fold"
+                label="Fold"
+                align="right"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={setSort}
+              />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r) => {
+              const foldColor =
+                r.fold >= 2
+                  ? "text-emerald-600 font-semibold"
+                  : r.fold >= 1.5
+                    ? "text-emerald-600"
+                    : "text-foreground";
+              return (
+                <tr key={r.method} className="border-b border-border/50">
+                  <td className="py-1.5 px-2 text-foreground font-medium">
+                    {r.method}
+                  </td>
+                  <td className="py-1.5 px-2 text-right tabular-nums">
+                    {r.cohortN > 0 && onFilterClick ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onFilterClick({
+                            label: `${r.method} variants`,
+                            sql: `pred_${r.method}`,
+                          })
+                        }
+                        className="text-primary hover:text-primary/80 underline decoration-primary/30 cursor-pointer"
+                      >
+                        {r.cohortN}
+                      </button>
+                    ) : (
+                      <span className="text-foreground">{r.cohortN}</span>
+                    )}
+                  </td>
+                  <td className="py-1.5 px-2 text-right tabular-nums text-foreground">
+                    {fmtPct(r.cohortRate)}
+                  </td>
+                  <td className="py-1.5 px-2 text-right tabular-nums text-muted-foreground">
+                    {fmtPct(r.baselineRate)}
+                  </td>
+                  <td
+                    className={cn(
+                      "py-1.5 px-2 text-right tabular-nums",
+                      foldColor,
+                    )}
+                  >
+                    {r.fold >= 0.05
+                      ? `${r.fold.toFixed(1)}x`
+                      : r.fold > 0
+                        ? `${r.fold.toFixed(2)}x`
+                        : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// BE ∩ CRISPRi Shared Significance (PPTX slides 53-54)
+// ============================================================================
+
+function SharedBeCrispriPanel({
+  data,
+  onFilterClick,
+}: {
+  data: SharedBeCrispri;
+  onFilterClick?: (f: VariantFilter) => void;
+}) {
+  const threshold = -Math.log10(0.05);
+  // 4 quadrants keyed by (beSig, crispriSig)
+  const groups = [
+    { key: "both", label: "Sig in both", color: "#eab308", outline: true },
+    {
+      key: "be_only",
+      label: "Sig in BE only",
+      color: "#7c3aed",
+      outline: false,
+    },
+    {
+      key: "crispri_only",
+      label: "Sig in CRISPRi only",
+      color: "#06b6d4",
+      outline: false,
+    },
+    {
+      key: "neither",
+      label: "Sig in neither",
+      color: "#d4d4d4",
+      outline: false,
+    },
+  ] as const;
+  const traces = groups.map((g) => {
+    const gpts = data.points.filter((p) => {
+      if (g.key === "both") return p.beSig && p.crispriSig;
+      if (g.key === "be_only") return p.beSig && !p.crispriSig;
+      if (g.key === "crispri_only") return !p.beSig && p.crispriSig;
+      return !p.beSig && !p.crispriSig;
+    });
+    return {
+      type: "scatter" as const,
+      mode: "markers" as const,
+      name: `${g.label} (${gpts.length})`,
+      x: gpts.map((p) => p.beNegLogP ?? 0),
+      y: gpts.map((p) => p.crispriNegLogP ?? 0),
+      marker: {
+        color: g.color,
+        size: 8,
+        line: g.outline
+          ? { color: "#171717", width: 1 }
+          : { color: "rgba(0,0,0,0)", width: 0 },
+      },
+      hovertemplate:
+        "%{text}<br>BE −log₁₀p: %{x:.2f}<br>CRISPRi −log₁₀p: %{y:.2f}<extra></extra>",
+      text: gpts.map(
+        (p) =>
+          `${p.variantVcf || `chr${p.chrom}:${p.position.toLocaleString()}`}${
+            p.genes.length > 0 ? ` · ${p.genes.slice(0, 3).join(", ")}` : ""
+          }`,
+      ),
+    };
+  });
+  return (
+    <section className="rounded-lg border border-border bg-card p-4 print:break-inside-avoid">
+      <SectionTitle
+        subtitle={`${data.totalOverlap.toLocaleString()} variants measured in both experiments · ${data.bothSigCount} significant in both · dashed lines mark p = 0.05.`}
+      >
+        Base Editing ∩ CRISPRi — Shared Significance
+      </SectionTitle>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-xs">
+        <QuadrantStat label="Sig in both" value={data.bothSigCount} />
+        <QuadrantStat label="BE only" value={data.beOnlySigCount} />
+        <QuadrantStat label="CRISPRi only" value={data.crispriOnlySigCount} />
+        <QuadrantStat
+          label="Neither"
+          value={
+            data.totalOverlap -
+            data.bothSigCount -
+            data.beOnlySigCount -
+            data.crispriOnlySigCount
+          }
+        />
+      </div>
+
+      <Plot
+        data={traces}
+        layout={{
+          font: PLOTLY_FONT,
+          paper_bgcolor: "transparent",
+          plot_bgcolor: "transparent",
+          height: 400,
+          margin: { l: 60, r: 20, t: 20, b: 60 },
+          xaxis: {
+            ...PLOTLY_AXIS,
+            title: { text: "Base Editing −log₁₀(p) — best of efflux / uptake" },
+            rangemode: "tozero" as const,
+          },
+          yaxis: {
+            ...PLOTLY_AXIS,
+            title: { text: "CRISPRi −log₁₀(p) — BEAN betabinom" },
+            rangemode: "tozero" as const,
+          },
+          shapes: [
+            {
+              type: "line" as const,
+              x0: threshold,
+              x1: threshold,
+              y0: 0,
+              y1: 1,
+              yref: "paper" as const,
+              line: { color: "#dc2626", dash: "dash" as const, width: 1 },
+            },
+            {
+              type: "line" as const,
+              y0: threshold,
+              y1: threshold,
+              x0: 0,
+              x1: 1,
+              xref: "paper" as const,
+              line: { color: "#dc2626", dash: "dash" as const, width: 1 },
+            },
+          ],
+          legend: {
+            orientation: "h" as const,
+            y: -0.16,
+            xanchor: "center" as const,
+            x: 0.5,
+          },
+          showlegend: true,
+        }}
+        config={PLOTLY_CONFIG_STATIC}
+        style={{ width: "100%" }}
+      />
+
+      {onFilterClick && data.bothSigCount > 0 && (
+        <button
+          type="button"
+          onClick={() =>
+            onFilterClick({
+              label: `${data.bothSigCount} variants sig in both BE & CRISPRi`,
+              sql: "has_be AND has_crispri AND either_sig AND crispri_sig",
+            })
+          }
+          className="text-xs text-primary hover:text-primary/80 underline decoration-primary/30 mt-3 block"
+        >
+          View {data.bothSigCount} variants significant in both →
+        </button>
+      )}
+
+      <PlotCaption>
+        Only variants measured in <em>both</em> experiments are shown. Upper-
+        right quadrant = hits worth following up (significant in both — the "44
+        variants" Rich flagged for perturb-seq). Variants just missing
+        significance in one assay sit along the dashed lines; useful for
+        borderline candidate selection.
+      </PlotCaption>
+    </section>
+  );
+}
+
+function QuadrantStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-border bg-background px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-base font-semibold text-foreground tabular-nums">
+        {value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+// ============================================================================
+// Experimental Overview (crosshair plot — matches Eric's PPTX slide 11/20/28)
+// ============================================================================
+
+/** 4-color categorization of a variant by (predicted_functional, experimentally_significant). */
+function tpCategory(p: MiamiPoint): "TP" | "FP" | "FN" | "TN" {
+  if (p.predicted_functional && p.is_sig) return "TP";
+  if (p.predicted_functional) return "FP";
+  if (p.is_sig) return "FN";
+  return "TN";
+}
+
+const TP_CATEGORY_COLORS: Record<"TP" | "FP" | "FN" | "TN", string> = {
+  TP: "#eab308",
+  FP: "#fde68a",
+  FN: "#7c3aed",
+  TN: "#d4d4d4",
+};
+
+/**
+ * Overview scatter with threshold crosshairs, one per dataset.
+ *
+ * Dual-p datasets (base editing: efflux × uptake): 2D scatter of both p-values
+ * with vertical + horizontal crosshair at −log10(0.05), colored TP/FP/FN/TN.
+ *
+ * Single-p datasets (MPRA): strip scatter of −log10(q) against predicted-
+ * functional (jittered) with a horizontal crosshair at the significance cutoff.
+ *
+ * Enrichment-mode datasets (finemapped): no continuous experimental score —
+ * returns null, no plot rendered.
+ */
+function ExperimentalOverviewPlot({ dr }: { dr: DatasetReport }) {
+  const pts = useMemo(
+    () => dr.miami.filter((p) => p.upper_neglog_p != null),
+    [dr.miami],
+  );
+  if (!dr.dataset.pvalColumns || pts.length === 0) return null;
+
+  const hasDualP = pts.some((p) => p.lower_neglog_p != null);
+  const threshold = -Math.log10(0.05);
+  const groups = ["TP", "FP", "FN", "TN"] as const;
+
+  if (hasDualP) {
+    const withBoth = pts.filter((p) => p.lower_neglog_p != null);
+    const traces = groups.map((g) => {
+      const gpts = withBoth.filter((p) => tpCategory(p) === g);
+      const outline = g === "TP" || g === "FN";
+      return {
+        type: "scatter" as const,
+        mode: "markers" as const,
+        name: `${g} (${gpts.length})`,
+        x: gpts.map((p) => p.lower_neglog_p ?? 0),
+        y: gpts.map((p) => p.upper_neglog_p ?? 0),
+        marker: {
+          color: TP_CATEGORY_COLORS[g],
+          size: 7,
+          line: outline
+            ? { color: "#171717", width: 1 }
+            : { color: "rgba(0,0,0,0)", width: 0 },
+        },
+        hovertemplate:
+          "%{text}<br>upper −log₁₀p: %{y:.2f}<br>lower −log₁₀p: %{x:.2f}<extra></extra>",
+        text: gpts.map(
+          (p) => `chr${p.chrom}:${p.position.toLocaleString()} · ${g}`,
+        ),
+      };
+    });
+    return (
+      <Plot
+        data={traces}
+        layout={{
+          font: PLOTLY_FONT,
+          paper_bgcolor: "transparent",
+          plot_bgcolor: "transparent",
+          height: 380,
+          margin: { l: 60, r: 20, t: 20, b: 60 },
+          xaxis: {
+            ...PLOTLY_AXIS,
+            title: { text: "−log₁₀(p) — lower assay" },
+            rangemode: "tozero" as const,
+          },
+          yaxis: {
+            ...PLOTLY_AXIS,
+            title: { text: "−log₁₀(p) — upper assay" },
+            rangemode: "tozero" as const,
+          },
+          shapes: [
+            {
+              type: "line" as const,
+              x0: threshold,
+              x1: threshold,
+              y0: 0,
+              y1: 1,
+              yref: "paper" as const,
+              line: { color: "#dc2626", dash: "dash" as const, width: 1 },
+            },
+            {
+              type: "line" as const,
+              y0: threshold,
+              y1: threshold,
+              x0: 0,
+              x1: 1,
+              xref: "paper" as const,
+              line: { color: "#dc2626", dash: "dash" as const, width: 1 },
+            },
+          ],
+          legend: {
+            orientation: "h" as const,
+            y: -0.18,
+            xanchor: "center" as const,
+            x: 0.5,
+          },
+          showlegend: true,
+        }}
+        config={PLOTLY_CONFIG_STATIC}
+        style={{ width: "100%" }}
+      />
+    );
+  }
+
+  // Strip scatter for single-p datasets.
+  // Pre-compute a deterministic jitter keyed by position so points are stable
+  // across renders and still spread horizontally within each predicted category.
+  const jitterFor = (position: number) => {
+    // Mulberry-style hash of position → [-0.175, +0.175]
+    let h = position >>> 0;
+    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+    h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+    h = (h ^ (h >>> 16)) >>> 0;
+    return (h / 0xffffffff - 0.5) * 0.35;
+  };
+  const traces = groups.map((g) => {
+    const gpts = pts.filter((p) => tpCategory(p) === g);
+    const outline = g === "TP" || g === "FN";
+    return {
+      type: "scatter" as const,
+      mode: "markers" as const,
+      name: `${g} (${gpts.length})`,
+      x: gpts.map(
+        (p) => (p.predicted_functional ? 1 : 0) + jitterFor(p.position),
+      ),
+      y: gpts.map((p) => p.upper_neglog_p ?? 0),
+      marker: {
+        color: TP_CATEGORY_COLORS[g],
+        size: 7,
+        line: outline
+          ? { color: "#171717", width: 1 }
+          : { color: "rgba(0,0,0,0)", width: 0 },
+      },
+      hovertemplate: "%{text}<br>−log₁₀p: %{y:.2f}<extra></extra>",
+      text: gpts.map(
+        (p) => `chr${p.chrom}:${p.position.toLocaleString()} · ${g}`,
+      ),
+    };
+  });
+  return (
+    <Plot
+      data={traces}
+      layout={{
+        font: PLOTLY_FONT,
+        paper_bgcolor: "transparent",
+        plot_bgcolor: "transparent",
+        height: 360,
+        margin: { l: 60, r: 20, t: 20, b: 60 },
+        xaxis: {
+          ...PLOTLY_AXIS,
+          title: { text: "Predicted" },
+          tickvals: [0, 1],
+          ticktext: ["Not functional", "Functional"],
+          range: [-0.6, 1.6],
+        },
+        yaxis: {
+          ...PLOTLY_AXIS,
+          title: { text: "−log₁₀(experimental p/q)" },
+          rangemode: "tozero" as const,
+        },
+        shapes: [
+          {
+            type: "line" as const,
+            y0: threshold,
+            y1: threshold,
+            x0: 0,
+            x1: 1,
+            xref: "paper" as const,
+            line: { color: "#dc2626", dash: "dash" as const, width: 1 },
+          },
+        ],
+        legend: {
+          orientation: "h" as const,
+          y: -0.2,
+          xanchor: "center" as const,
+          x: 0.5,
+        },
+        showlegend: true,
+      }}
+      config={PLOTLY_CONFIG_STATIC}
+      style={{ width: "100%" }}
+    />
   );
 }
 
@@ -2096,7 +2891,7 @@ export function IgvfLipidReport({
 
       {/* Section 2: Per-Dataset Analysis */}
       <div>
-        <h2 className="text-base font-semibold text-foreground mb-4">
+        <h2 className="text-base font-semibold text-foreground mb-4 print:hidden">
           Per-Dataset Analysis
         </h2>
         {report.availableDatasets.length > 1 && activeDataset && (
@@ -2113,7 +2908,6 @@ export function IgvfLipidReport({
           {activeReport && (
             <DatasetReportView
               report={activeReport}
-              totalVariants={report.totalVariants}
               onFilterClick={setVariantFilter}
             />
           )}
@@ -2121,19 +2915,8 @@ export function IgvfLipidReport({
         <div className="hidden print:block space-y-12">
           {report.availableDatasets.map((id) => {
             const r = report.reports[id];
-            const def = DATASET_DEFS.find((d) => d.id === id);
-            if (!r || !def) return null;
-            return (
-              <div key={id}>
-                <h3 className="text-sm font-semibold text-foreground mb-4 border-b border-border pb-2">
-                  {def.label} ({r.variantCount})
-                </h3>
-                <DatasetReportView
-                  report={r}
-                  totalVariants={report.totalVariants}
-                />
-              </div>
-            );
+            if (!r) return null;
+            return <DatasetReportView key={id} report={r} />;
           })}
         </div>
       </div>
