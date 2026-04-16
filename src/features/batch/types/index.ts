@@ -16,7 +16,18 @@ export type DataType =
   | "variant_list"
   | "gwas_sumstats"
   | "credible_set"
-  | "fine_mapping";
+  | "fine_mapping"
+  | "unknown";
+
+/** Data types the user can explicitly choose in the picker. Excludes `"unknown"`. */
+export const SELECTABLE_DATA_TYPES = [
+  "variant_list",
+  "gwas_sumstats",
+  "credible_set",
+  "fine_mapping",
+] as const satisfies readonly DataType[];
+
+export type SelectableDataType = (typeof SELECTABLE_DATA_TYPES)[number];
 
 export type JobState =
   | "PENDING"
@@ -28,8 +39,11 @@ export type JobState =
 
 export type InputFormat = "AUTO" | "CSV" | "TSV" | "TXT";
 
-// Note: Backend uses RSID (no underscore)
-export type KeyType = "AUTO" | "VID" | "RSID" | "VCF";
+// Note: Backend uses RSID (no underscore in this app's internal form).
+// The /cohorts/validate response may emit "RS_ID" inside variant_key_alternatives;
+// it's normalized to "RSID" at the API parse boundary so inner code sees one spelling.
+// "UNKNOWN" covers rows that errored before the resolver could classify them.
+export type KeyType = "AUTO" | "VID" | "RSID" | "VCF" | "UNKNOWN";
 
 export type OutputRowStatus = "FOUND" | "NOT_FOUND" | "INVALID" | "ERROR";
 
@@ -75,6 +89,10 @@ export interface ValidateRequest {
   hint_column_map?: Record<string, string>;
   hint_format?: InputFormat;
   hint_has_header?: boolean;
+  /** User's committed variant-key pick (single-column form). */
+  hint_key_column?: string;
+  /** User's committed variant-key pick (4-column VCF form). */
+  hint_key_vcf_columns?: VcfKeyColumns;
 }
 
 export interface KeyTypeStats {
@@ -164,6 +182,26 @@ export interface ColumnMapping {
   source: "alias" | "exact" | "custom" | (string & {});
 }
 
+/**
+ * Backend-proposed variant-key pick. For `vcf_columns` strategy, `columns` is
+ * the four VCF columns in [chrom, pos, ref, alt] order; for `single_column`
+ * it's a one-element array containing the single-column name (rsID / SPDI / VID).
+ */
+export interface VariantKeyAlternative {
+  strategy: "vcf_columns" | "single_column";
+  columns: string[];
+  key_type: KeyType;
+  reason: string;
+}
+
+/** Four-column VCF key specification used by both request and picker state. */
+export interface VcfKeyColumns {
+  chrom: string;
+  pos: string;
+  ref_col: string;
+  alt: string;
+}
+
 export interface TypedValidateResponse {
   ok: boolean;
   data_type: DataType;
@@ -178,6 +216,16 @@ export interface TypedValidateResponse {
     | "chrom_pos_only"
     | "none";
   variant_key_columns: string[];
+  /** 0.0–1.0. Independent of `confidence` (which is for `data_type`). */
+  variant_key_confidence: number;
+  /**
+   * True when the file is ambiguous about which column(s) hold the variant
+   * identifier and the user must pick one of `variant_key_alternatives`.
+   * Orthogonal to `requires_confirmation` (which governs `data_type`).
+   */
+  variant_key_requires_confirmation: boolean;
+  /** Candidate key-source picks in backend-preferred order (first = top pick). */
+  variant_key_alternatives: VariantKeyAlternative[];
   row_count_estimate: number;
   warnings: string[];
   errors: string[];
@@ -568,7 +616,10 @@ export interface CreateCohortRequest {
   idempotency_key?: string;
   format?: InputFormat;
   key_type?: KeyType;
+  /** Single-column variant-key pick (rsID / SPDI / VID column). Mutually exclusive with `key_vcf_columns`. */
   key_column?: string;
+  /** 4-column VCF variant-key pick. Mutually exclusive with `key_column`. */
+  key_vcf_columns?: VcfKeyColumns;
   has_header?: boolean;
   delimiter?: string;
   include_not_found?: boolean;
@@ -681,17 +732,34 @@ export type WizardState =
   | { step: "uploading"; file: File; progress: number }
   | { step: "validating"; file: File; inputUri: string }
   | {
+      step: "data-type";
+      file: File;
+      inputUri: string;
+      validation: TypedValidateResponse;
+    }
+  | {
       step: "mapping";
       file: File;
       inputUri: string;
       validation: TypedValidateResponse;
+      dataType: SelectableDataType;
+    }
+  | {
+      step: "variant-key";
+      file: File;
+      inputUri: string;
+      validation: TypedValidateResponse;
+      dataType: DataType;
+      columnMap: ColumnMapping[] | null;
     }
   | {
       step: "configuring";
       file: File;
       inputUri: string;
       validation: TypedValidateResponse;
+      dataType: DataType;
       columnMap: ColumnMapping[] | null;
+      variantKeyChoice: VariantKeyAlternative | null;
       error?: string;
     }
   | {
@@ -699,7 +767,9 @@ export type WizardState =
       file: File;
       inputUri: string;
       validation: TypedValidateResponse;
+      dataType: DataType;
       columnMap: ColumnMapping[] | null;
+      variantKeyChoice: VariantKeyAlternative | null;
     };
 
 export type WizardAction =
@@ -709,8 +779,12 @@ export type WizardAction =
   | { type: "UPLOAD_FAILED"; error: string }
   | { type: "VALIDATION_DONE"; validation: TypedValidateResponse }
   | { type: "VALIDATION_FAILED"; error: string }
+  | { type: "DATA_TYPE_SELECTED"; dataType: SelectableDataType }
   | { type: "MAPPING_CONFIRMED"; columnMap: ColumnMapping[] }
+  | { type: "VARIANT_KEY_SELECTED"; choice: VariantKeyAlternative }
+  | { type: "BACK_TO_DATA_TYPE" }
   | { type: "BACK_TO_MAPPING" }
+  | { type: "BACK_TO_VARIANT_KEY" }
   | { type: "CREATING" }
   | { type: "CREATE_FAILED"; error: string }
   | { type: "RESET" };

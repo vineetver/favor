@@ -23,6 +23,7 @@ export function getKeyTypeLabel(keyType: string): string {
     RSID: "rsID",
     VCF: "VCF",
     AUTO: "Auto",
+    UNKNOWN: "Unknown",
   };
   return labels[keyType] || keyType;
 }
@@ -43,6 +44,7 @@ export function getDataTypeLabel(dt: string): string {
     gwas_sumstats: "GWAS Summary Stats",
     credible_set: "Credible Set",
     fine_mapping: "Fine Mapping",
+    unknown: "Unknown",
   };
   return labels[dt] || dt;
 }
@@ -56,6 +58,7 @@ export function getDataTypeDescription(dt: string): string {
       "Fine-mapped credible set with posterior inclusion probabilities",
     fine_mapping:
       "Fine mapping results with statistical evidence for causal variants",
+    unknown: "File content could not be automatically classified",
   };
   return descriptions[dt] || "";
 }
@@ -66,6 +69,23 @@ export function getVariantKeyStrategyLabel(strategy: string): string {
     chrom_pos_ref_alt: "Chr:Pos:Ref:Alt",
     chrom_pos_only: "Chr:Pos (position only)",
     none: "No variant key",
+    vcf_columns: "VCF columns (chrom, pos, ref, alt)",
+    single_column: "Single column",
   };
   return labels[strategy] || strategy;
+}
+
+/**
+ * Human-readable label for a variant-key alternative's key_type.
+ * Mirrors the backend's KeyType → presentation mapping ("RSID" → "rsID", etc.).
+ */
+export function getVariantKeyTypeDescription(keyType: string): string {
+  const descriptions: Record<string, string> = {
+    VCF: "Direct encoding from VCF columns",
+    RSID: "Database lookup via rsID",
+    VID: "Internal variant ID (vid:N)",
+    AUTO: "Auto-detected per row",
+    UNKNOWN: "Key could not be parsed",
+  };
+  return descriptions[keyType] || "";
 }

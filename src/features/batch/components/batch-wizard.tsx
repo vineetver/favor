@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   Columns3,
   FileSpreadsheet,
+  HelpCircle,
+  Key,
   Loader2,
   Settings2,
   Upload,
@@ -21,10 +23,13 @@ import {
   useWizard,
   type VisualStep,
 } from "../hooks/use-wizard";
+import type { TypedValidateResponse } from "../types";
 import { ColumnMappingEditor } from "./column-mapping-editor";
+import { DataTypePicker } from "./data-type-picker";
 import { JobConfiguration } from "./job-configuration";
 import { UploadDropzone } from "./upload-dropzone";
 import { ValidationSummary } from "./validation-summary";
+import { VariantKeyPicker } from "./variant-key-picker";
 
 // ============================================================================
 // Types
@@ -41,7 +46,7 @@ interface StepConfig {
   icon: typeof Upload;
 }
 
-const BASE_STEPS: StepConfig[] = [
+const ALL_STEPS: readonly StepConfig[] = [
   {
     id: "upload",
     label: "Upload",
@@ -55,10 +60,22 @@ const BASE_STEPS: StepConfig[] = [
     icon: FileSpreadsheet,
   },
   {
+    id: "data-type",
+    label: "Data type",
+    description: "Confirm data kind",
+    icon: HelpCircle,
+  },
+  {
     id: "mapping",
     label: "Mapping",
     description: "Review column mapping",
     icon: Columns3,
+  },
+  {
+    id: "variant-key",
+    label: "Variant key",
+    description: "Pick key column(s)",
+    icon: Key,
   },
   {
     id: "configure",
@@ -78,20 +95,33 @@ const BASE_STEPS: StepConfig[] = [
 // Step Indicator
 // ============================================================================
 
+/**
+ * The mapping / data-type / variant-key steps are optional — they only appear
+ * when the validation response asks for them. Compute the visible step list
+ * once validation is in so the stepper reflects the actual path.
+ */
+function visibleSteps(
+  showDataType: boolean,
+  showMapping: boolean,
+  showVariantKey: boolean,
+): StepConfig[] {
+  return ALL_STEPS.filter((s) => {
+    if (s.id === "data-type") return showDataType;
+    if (s.id === "mapping") return showMapping;
+    if (s.id === "variant-key") return showVariantKey;
+    return true;
+  });
+}
+
 function StepIndicator({
   currentStep,
-  showMapping,
+  steps,
   className,
 }: {
   currentStep: VisualStep;
-  showMapping: boolean;
+  steps: StepConfig[];
   className?: string;
 }) {
-  const steps = useMemo(
-    () =>
-      showMapping ? BASE_STEPS : BASE_STEPS.filter((s) => s.id !== "mapping"),
-    [showMapping],
-  );
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
   return (
@@ -154,6 +184,25 @@ function StepIndicator({
 }
 
 // ============================================================================
+// Derived helpers
+// ============================================================================
+
+function getValidation(
+  state: ReturnType<typeof useWizard>["state"],
+): TypedValidateResponse | null {
+  switch (state.step) {
+    case "data-type":
+    case "mapping":
+    case "variant-key":
+    case "configuring":
+    case "creating":
+      return state.validation;
+    default:
+      return null;
+  }
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -162,8 +211,12 @@ export function BatchWizard({ className }: BatchWizardProps) {
   const {
     state,
     selectFile,
+    confirmDataType,
     confirmMapping,
+    confirmVariantKey,
+    goBackToDataType,
     goBackToMapping,
+    goBackToVariantKey,
     submit,
     reset,
     isTyped,
@@ -171,6 +224,22 @@ export function BatchWizard({ className }: BatchWizardProps) {
   } = useWizard();
 
   const stepDescription = getStepDescription(visualStep);
+  const validation = getValidation(state);
+
+  // Once validation has landed, the optional steps are fixed for the rest of
+  // this upload. Use the validation flags so the indicator shows a stable
+  // path across data-type → mapping → variant-key → configure.
+  const steps = useMemo(() => {
+    if (!validation) {
+      // Pre-validation: hide all optional steps; the indicator shows the
+      // minimum path (upload / validate / configure / complete).
+      return visibleSteps(false, false, false);
+    }
+    const showDataType = validation.requires_confirmation;
+    const showMapping = isTyped && validation.suggested_column_map.length > 0;
+    const showVariantKey = validation.variant_key_requires_confirmation;
+    return visibleSteps(showDataType, showMapping, showVariantKey);
+  }, [validation, isTyped]);
 
   return (
     <div
@@ -201,7 +270,7 @@ export function BatchWizard({ className }: BatchWizardProps) {
 
         {/* Step Indicator */}
         <div className="px-6 py-3 bg-muted/80 border-t border-border">
-          <StepIndicator currentStep={visualStep} showMapping={isTyped} />
+          <StepIndicator currentStep={visualStep} steps={steps} />
         </div>
       </div>
 
@@ -240,13 +309,41 @@ export function BatchWizard({ className }: BatchWizardProps) {
           )}
 
           {/* ================================================================ */}
-          {/* Column Mapping (typed cohorts only) */}
+          {/* Data-type picker (requires_confirmation) */}
           {/* ================================================================ */}
-          {state.step === "mapping" && (
-            <div className="space-y-6">
+          {state.step === "data-type" && (
+            <div className="max-w-2xl mx-auto space-y-6">
               <Button variant="ghost" size="sm" onClick={reset}>
                 <ArrowLeft className="w-4 h-4" />
                 Upload different file
+              </Button>
+
+              <DataTypePicker
+                typedValidation={state.validation}
+                onConfirm={confirmDataType}
+                onBack={reset}
+              />
+            </div>
+          )}
+
+          {/* ================================================================ */}
+          {/* Column Mapping (typed cohorts) */}
+          {/* ================================================================ */}
+          {state.step === "mapping" && (
+            <div className="space-y-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={
+                  state.validation.requires_confirmation
+                    ? goBackToDataType
+                    : reset
+                }
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {state.validation.requires_confirmation
+                  ? "Back to data type"
+                  : "Upload different file"}
               </Button>
 
               <ValidationSummary
@@ -265,6 +362,38 @@ export function BatchWizard({ className }: BatchWizardProps) {
           )}
 
           {/* ================================================================ */}
+          {/* Variant-key picker (variant_key_requires_confirmation) */}
+          {/* ================================================================ */}
+          {state.step === "variant-key" && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={
+                  state.columnMap
+                    ? goBackToMapping
+                    : state.validation.requires_confirmation
+                      ? goBackToDataType
+                      : reset
+                }
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {state.columnMap
+                  ? "Back to mapping"
+                  : state.validation.requires_confirmation
+                    ? "Back to data type"
+                    : "Upload different file"}
+              </Button>
+
+              <VariantKeyPicker
+                typedValidation={state.validation}
+                onConfirm={confirmVariantKey}
+                onBack={reset}
+              />
+            </div>
+          )}
+
+          {/* ================================================================ */}
           {/* Configure */}
           {/* ================================================================ */}
           {state.step === "configuring" && (
@@ -272,10 +401,24 @@ export function BatchWizard({ className }: BatchWizardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={isTyped ? goBackToMapping : reset}
+                onClick={
+                  state.validation.variant_key_requires_confirmation
+                    ? goBackToVariantKey
+                    : state.columnMap
+                      ? goBackToMapping
+                      : state.validation.requires_confirmation
+                        ? goBackToDataType
+                        : reset
+                }
               >
                 <ArrowLeft className="w-4 h-4" />
-                {isTyped ? "Back to mapping" : "Upload different file"}
+                {state.validation.variant_key_requires_confirmation
+                  ? "Back to variant key"
+                  : state.columnMap
+                    ? "Back to mapping"
+                    : state.validation.requires_confirmation
+                      ? "Back to data type"
+                      : "Upload different file"}
               </Button>
 
               <JobConfiguration

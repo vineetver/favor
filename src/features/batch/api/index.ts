@@ -289,10 +289,34 @@ export async function validateTypedCohort(
       credentials: "include",
       body: JSON.stringify(request),
       signal,
-    }).then((res) =>
-      handleResponse<TypedValidateResponse>(res, "/cohorts/validate"),
-    ),
+    })
+      .then((res) =>
+        handleResponse<TypedValidateResponse>(res, "/cohorts/validate"),
+      )
+      .then(parseTypedValidateResponse),
   );
+}
+
+/**
+ * Backend emits "RS_ID" inside `variant_key_alternatives[].key_type`, but the
+ * rest of the app uses "RSID". Normalize at the parse boundary so inner code
+ * only ever sees one spelling. Also defaults the three new variant-key fields
+ * when the backend omits them (older deploys, Parquet uploads).
+ */
+function parseTypedValidateResponse(
+  raw: TypedValidateResponse,
+): TypedValidateResponse {
+  const alternatives = (raw.variant_key_alternatives ?? []).map((alt) => ({
+    ...alt,
+    key_type: (alt.key_type as string) === "RS_ID" ? "RSID" : alt.key_type,
+  }));
+  return {
+    ...raw,
+    variant_key_confidence: raw.variant_key_confidence ?? 1,
+    variant_key_requires_confirmation:
+      raw.variant_key_requires_confirmation ?? false,
+    variant_key_alternatives: alternatives,
+  };
 }
 
 /**
