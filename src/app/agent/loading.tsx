@@ -2,7 +2,7 @@ import { Skeleton } from "@shared/components/ui/skeleton";
 
 export default function AgentLoading() {
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
+    <div className="h-[calc(100vh-4rem-var(--status-banner-h,0px))] flex">
       {/* Sidebar */}
       <div className="hidden md:flex flex-col w-64 border-r border-border p-4 gap-3">
         <Skeleton className="h-9 w-full rounded-lg" />
