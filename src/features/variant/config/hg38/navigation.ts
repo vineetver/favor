@@ -123,5 +123,6 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
     name: "Genome Browser",
     slug: "genome-browser",
     subCategories: [],
+    groups: [],
   },
 ];
