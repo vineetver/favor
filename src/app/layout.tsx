@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { StatusBanner } from "@features/platform-status";
 import { Footer } from "@shared/components/layout/footer";
 import { Navbar } from "@shared/components/layout/navbar";
 import { GoogleAnalytics } from "@shared/components/ui/google-analytics";
@@ -35,8 +36,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          <StatusBanner />
           <Navbar />
-          <main className="mt-16 flex-1">{children}</main>
+          <main
+            style={{
+              marginTop: "calc(4rem + var(--status-banner-h, 0px))",
+            }}
+            className="flex-1"
+          >
+            {children}
+          </main>
           <Footer />
           <Toaster position="top-center" richColors />
         </Providers>

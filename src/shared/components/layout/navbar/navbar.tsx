@@ -103,8 +103,9 @@ export function Navbar() {
   return (
     <>
       <nav
+        style={{ top: "var(--status-banner-h, 0px)" }}
         className={cn(
-          "fixed w-full z-50 top-0",
+          "fixed w-full z-50",
           "transition-all duration-500 ease-in-out",
           scrolled
             ? "bg-background/85 backdrop-blur-2xl border-b border-border/60 py-4 shadow-sm"
