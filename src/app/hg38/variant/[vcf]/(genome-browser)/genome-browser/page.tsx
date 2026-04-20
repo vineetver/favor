@@ -21,11 +21,7 @@ export default async function GenomeBrowserPage({
   const end = v.position + WINDOW_BP;
 
   return (
-    <BrowserPage
-      chromosome={`chr${v.chromosome}`}
-      start={start}
-      end={end}
-    />
+    <BrowserPage chromosome={`chr${v.chromosome}`} start={start} end={end} />
   );
 }
 
