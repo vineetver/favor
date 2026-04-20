@@ -22,7 +22,7 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org). Functional annotation,
 
 ### AI and agent workflows
 - **FAVOR Agent**: Claude Code for variant interpretation. For biobank-scale rare-variant analysis, see [FAVOR CLI](https://github.com/vineetver/favor-cli).
-- **Structured RAG over the knowledge graph**: plain-English queries compile into one server-side plan across Kuzu, ClickHouse, and parquet. N-hop traversals finish in one round-trip instead of N API calls. If two types lack a direct link, the plan bridges through an intermediate type; if a hop returns nothing, the rest of the path re-plans on the fly.
+- **Structured RAG over the knowledge graph**: plain-English queries compile into one server-side plan across Kuzu, ClickHouse, and parquet. N-hop traversals finish in one round-trip instead of N API calls.
 - **Seven graph modes**:
   - `chain`: multi-hop (Disease <-> Gene <-> Drug, Variant <-> Gene <-> Pathway)
   - `neighbors`: direct links
