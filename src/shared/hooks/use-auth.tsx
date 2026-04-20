@@ -53,7 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const maxRetries = 2;
 
     function tryFetchAuth() {
-      fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+      fetch(`${API_BASE}/auth/me`, {
+        credentials: "include",
+        cache: "no-store",
+      })
         .then((res) => {
           if (res.ok) return res.json();
           // 401/403 = genuinely not authenticated, don't retry

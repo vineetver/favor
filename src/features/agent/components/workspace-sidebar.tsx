@@ -201,7 +201,7 @@ export function WorkspaceSidebar({
             size="icon-sm"
             className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
             onClick={() => setShowSubmit((v) => !v)}
-            title="Upload cohort"
+            title="Upload variant list"
           >
             <PlusIcon className="size-3.5" />
           </Button>

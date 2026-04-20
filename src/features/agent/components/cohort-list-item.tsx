@@ -64,7 +64,7 @@ export function CohortListItem({
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-medium text-foreground">
-              {cohort.label ?? "Untitled cohort"}
+              {cohort.label ?? "Untitled variant list"}
             </p>
             <p className="mt-0.5 text-[10px] text-muted-foreground">
               {isProcessing ? (
@@ -113,7 +113,7 @@ export function CohortListItem({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  Remove cohort
+                  Remove variant list
                 </TooltipContent>
               </Tooltip>
             )}

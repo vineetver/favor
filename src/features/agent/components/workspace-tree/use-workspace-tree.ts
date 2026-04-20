@@ -92,7 +92,7 @@ export function useWorkspaceTree(): UseWorkspaceTreeResult {
       const cohortsFolderNode: FolderNode = {
         kind: "cohorts-folder",
         id: "cohorts",
-        label: "cohorts",
+        label: "variant lists",
         path: "cohorts",
         depth: 0,
         children: cohorts.map(buildCohortNode),

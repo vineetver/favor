@@ -188,7 +188,7 @@ export function VariantSubmitPanel({
       setPasteText("");
     } catch (err) {
       setPasteError(
-        err instanceof Error ? err.message : "Failed to create cohort",
+        err instanceof Error ? err.message : "Failed to create variant list",
       );
     } finally {
       setIsCreatingPaste(false);
@@ -247,7 +247,7 @@ export function VariantSubmitPanel({
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setUploadError(
-        err instanceof Error ? err.message : "Failed to create cohort",
+        err instanceof Error ? err.message : "Failed to create variant list",
       );
     } finally {
       setIsCreatingUpload(false);
@@ -323,7 +323,7 @@ export function VariantSubmitPanel({
           {isCreatingPaste ? (
             <>
               <Loader2Icon className="size-3.5 animate-spin" />
-              Creating cohort...
+              Creating variant list...
             </>
           ) : (
             "Create & Analyze"
@@ -408,7 +408,7 @@ export function VariantSubmitPanel({
               {isCreatingUpload ? (
                 <>
                   <Loader2Icon className="size-3.5 animate-spin" />
-                  Creating cohort...
+                  Creating variant list...
                 </>
               ) : (
                 "Create & Analyze"

@@ -14,8 +14,8 @@ import {
   BrainCircuitIcon,
   FlaskConicalIcon,
   GlobeIcon,
+  MessageSquarePlusIcon,
   ScatterChartIcon,
-  SendIcon,
   Share2Icon,
   ShieldAlertIcon,
   TargetIcon,
@@ -279,29 +279,29 @@ export function CohortPromptPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 p-0 overflow-hidden">
+      <DialogContent className="gap-0 p-0 overflow-hidden max-h-[85vh] flex flex-col">
         {/* Header */}
-        <DialogHeader className="px-5 pt-5 pb-4">
+        <DialogHeader className="px-5 pt-5 pb-4 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="shrink-0 rounded-lg bg-primary/10 p-2">
               <FlaskConicalIcon className="size-4 text-primary" />
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-[15px] font-semibold text-foreground truncate">
-                {cohort.label ?? "Untitled cohort"}
+                {cohort.label ?? "Untitled variant list"}
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {(cohort.variant_count ?? 0).toLocaleString()} {rowLabel}{" "}
-                &middot; Choose a question or write your own
+                &middot; Starts a new conversation
               </p>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="h-px bg-border" />
+        <div className="h-px bg-border shrink-0" />
 
-        {/* Curated prompts */}
-        <div className="px-5 py-4 space-y-2">
+        {/* Curated prompts (scrolls if viewport is short) */}
+        <div className="px-5 py-4 space-y-2 overflow-y-auto">
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-2.5">
             Suggested questions
           </p>
@@ -329,10 +329,10 @@ export function CohortPromptPicker({
           </div>
         </div>
 
-        <div className="h-px bg-border" />
+        <div className="h-px bg-border shrink-0" />
 
         {/* Custom prompt input */}
-        <div className="px-5 py-4">
+        <div className="px-5 py-4 shrink-0">
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-2.5">
             Or ask your own question
           </p>
@@ -340,7 +340,7 @@ export function CohortPromptPicker({
             <Textarea
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder="What would you like to know about this cohort?"
+              placeholder="What would you like to know about this variant list?"
               className="min-h-[72px] resize-none text-[13px]"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -357,8 +357,8 @@ export function CohortPromptPicker({
               onClick={handleCustomSubmit}
               className="gap-1.5"
             >
-              <SendIcon className="size-3.5" />
-              Send
+              <MessageSquarePlusIcon className="size-3.5" />
+              Start conversation
             </Button>
           </div>
         </div>
