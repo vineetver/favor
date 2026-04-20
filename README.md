@@ -16,35 +16,47 @@
 
 ---
 
-Web frontend for [FAVOR](https://favor-beta.genohub.org), an AI-first whole-genome variant functional annotation platform covering WGS, single-cell, and multi-omics datasets to accelerate drug discovery and disease association through fast variant interpretation.
+Web frontend for [FAVOR](https://favor-beta.genohub.org). Functional annotation, genome browsing, and agent-driven analysis over WGS, single-cell, and multi-omics variant data.
 
 ## Features
 
+### AI and agent workflows
+- **FAVOR Agent**: Claude Code for variant interpretation. For biobank-scale rare-variant analysis, see [FAVOR CLI](https://github.com/vineetver/favor-cli).
+- **Structured RAG over the knowledge graph**: plain-English queries compile into one server-side plan across Kuzu, ClickHouse, and parquet. N-hop traversals finish in one round-trip instead of N API calls. Missing edges auto-bridge through valid intermediate types. Dead-end plans trigger a frontier cascade that re-routes live.
+- **Seven graph modes**:
+  - `chain`: multi-hop (Disease <-> Gene <-> Drug, Variant <-> Gene <-> Pathway)
+  - `neighbors`: direct links
+  - `context`: surrounding facts
+  - `compare`: two entities side by side
+  - `aggregate`: group and count
+  - `enrich`: statistical overrepresentation
+  - `paths`: shortest path between two entities
+- **Lightweight analytics on variant lists**: SNP-to-gene, gene-to-function, GWAS summary statistics, gene-to-entity traversals.
+- **Variant effect in cellular context**: predicted effects from multi-omics and IGVF data, scoped to a given cell type.
+- **Experimental variant effect**: measured in CRISPRi, MPRA, MAVE, and base-editing datasets.
+- **Generative UI**: ten inline chat components: bar, comparison, distribution, enrichment, heatmap, network, protein structure, QQ, scatter, stat card.
+- **Persistent workspace**: variant lists, tool outputs, pinned entities survive across turns.
+- **AlphaGenome**: async submit-and-poll for DeepMind's variant-effect predictor.
+
 ### Scale and visualization
-- **Genome-wide browsing at 8.9B-variant scale** — Gosling.js + HiGlass tile servers stream zoomable tracks across the entire human genome with no client-side aggregation
-- **In-browser SQL over parquet** — DuckDB WASM runs queries on variant list files client-side, no server round-trips for millions of rows
-- **Server-side tables** — TanStack Table wired to backend pagination, sorting, filtering, and column selection for variant and variant list datasets
-- **Interactive knowledge graphs** — Cytoscape and XYFlow render variant-gene-disease-drug relationships as navigable graphs
-- **Statistical and locus plots** — Manhattan, QQ, tissue heatmaps, allele-frequency distributions via Plotly and Recharts
+- **8.9B-variant genome browser**: Gosling.js and HiGlass, no client-side aggregation.
+- **In-browser SQL**: DuckDB WASM over parquet.
+- **Server-side tables**: TanStack Table with backend pagination, sort, filter, column select.
+- **Interactive knowledge graphs**: Cytoscape and XYFlow over variant, gene, disease, drug.
+- **Locus plots**: Manhattan, QQ, tissue heatmaps, allele-frequency distributions.
 
 ### Search and discovery
-- **Universal search** across variants, genes, diseases, drugs, and studies with typeahead and intent routing
-- **Variant detail pages** — annotation, GWAS, gnomAD population ancestry, per-tissue QTLs, ChromBPNet scores, allelic imbalance, methylation
-- **Gene detail pages** — variant scanning, summary statistics, pathway and drug-target lookups
-- **Disease and drug pages** — Open Targets GraphQL integration, evidence summaries
-- **Regulatory genomics** — cCRE, QTL, enhancer-gene links, chromatin states, loops, perturbation data (CRISPR / Perturb-seq / MAVE)
-
-### AI and agent workflows
-- **AI agent workspace** — graph-aware multi-turn LLM agent with tool use, variant list context, and persistent memory
-- **AI entity summaries** — on-demand LLM summaries for variants, genes, and diseases, streamed via SSE
-- **Multi-model support** — OpenAI and DeepSeek, switchable per session
-- **Async job orchestration** — AlphaGenome variant prediction with submit-and-poll and progress tracking
+- **Universal search** across variants, genes, diseases, drugs, studies. Typeahead, intent routing.
+- **Variant pages**: annotation, GWAS, gnomAD ancestry, tissue QTLs, ChromBPNet, allelic imbalance, methylation.
+- **Gene pages**: variant scan, summary stats, pathways, drug targets.
+- **Disease and drug pages**: Open Targets GraphQL, evidence summaries.
+- **Regulatory genomics**: cCRE, QTL, enhancer-gene links, chromatin states, loops.
 
 ### Platform
-- **Batch annotation** — authenticated variant list upload, parquet validation, column derivation, analytics runs, tissue-specific enrichment packs
-- **Authenticated workflows** — cookie-based auth, quota display, personal API keys, authenticated SSE proxy for streaming
-- **Shareable URL state** — deep links that round-trip for genome browser coordinates, search, and agent sessions
-- **Type-safe API layer** — feature-isolated clients, responses parsed at the boundary into branded types
+- **Batch annotation**: variant list upload, parquet validation, analytics runs, tissue enrichment packs.
+- **Auth**: cookies, quotas, personal API keys, authenticated SSE proxy.
+- **Shareable URLs**: deep links round-trip for browser, search, and agent state.
+- **Type-safe API**: feature-isolated clients, boundary parsing into branded types.
 
 ## Quick Start
 
