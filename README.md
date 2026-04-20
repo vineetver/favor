@@ -16,7 +16,7 @@
 
 ---
 
-Web frontend for [FAVOR](https://favor-beta.genohub.org). Functional annotation, genome browsing, and agent-driven analysis over WGS, single-cell, and multi-omics variant data.
+Web frontend for [FAVOR](https://favor-beta.genohub.org). Variant annotation, genome browsing, and an agent for functional interpretation.
 
 ## Features
 
@@ -31,7 +31,7 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org). Functional annotation,
   - `aggregate`: group and count
   - `enrich`: statistical overrepresentation
   - `paths`: shortest path between two entities
-- **Multi-step workflows** (one agent call each):
+- **Multi-step workflows** with stateful agents, e.g.:
   - variant list → gene → function → pathway, with GWAS stats
   - variant → predicted cell effect (multi-omics, IGVF)
   - variant → measured cell effect (CRISPRi, MPRA, MAVE, base editing)
