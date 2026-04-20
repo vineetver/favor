@@ -12,6 +12,7 @@ async function sessionFetch<T>(
     headers: { "Content-Type": "application/json" },
     body: options?.body ? JSON.stringify(options.body) : undefined,
     credentials: "include",
+    cache: "no-store",
   });
   if (!res.ok) {
     // Redirect to login on 401
