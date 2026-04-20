@@ -440,6 +440,7 @@ export async function listCohorts(opts?: {
   return withRetry(() =>
     fetch(`${API_BASE}/cohorts${qs ? `?${qs}` : ""}`, {
       credentials: "include",
+      cache: "no-store",
     }).then((res) => handleResponse<CohortListResponse>(res, "/cohorts")),
   );
 }
@@ -605,7 +606,7 @@ export async function listAnalyticsRuns(
   return withRetry(() =>
     fetch(
       `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/analytics/runs${qs ? `?${qs}` : ""}`,
-      { credentials: "include" },
+      { credentials: "include", cache: "no-store" },
     ).then((res) =>
       handleResponse<AnalyticsRunListResponse>(
         res,
@@ -746,7 +747,7 @@ export async function listCohortShares(
 ): Promise<CohortShare[]> {
   return fetch(
     `${API_BASE}/cohorts/${encodeURIComponent(cohortId)}/shares`,
-    withAuth(),
+    withAuth({ cache: "no-store" }),
   ).then((res) =>
     handleResponse<CohortShare[]>(res, `/cohorts/${cohortId}/shares`),
   );

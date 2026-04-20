@@ -25,7 +25,10 @@ import { handle401 } from "@infra/api/handle-auth-error";
 import { API_BASE } from "@/config/api";
 
 async function fetchQuotas(): Promise<Quota[]> {
-  const res = await fetch(`${API_BASE}/quotas`, { credentials: "include" });
+  const res = await fetch(`${API_BASE}/quotas`, {
+    credentials: "include",
+    cache: "no-store",
+  });
   if (!res.ok) {
     if (handle401(res.status)) return []; // redirect in progress
     throw new Error(`Quota fetch failed: ${res.status}`);

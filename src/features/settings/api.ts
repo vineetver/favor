@@ -37,6 +37,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export async function listApiKeys(): Promise<ApiKeyItem[]> {
   const res = await fetch(`${API_BASE}/auth/api-keys`, {
     credentials: "include",
+    cache: "no-store",
   });
   return handleResponse<ApiKeyItem[]>(res);
 }
