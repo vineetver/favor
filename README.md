@@ -31,11 +31,12 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org). Functional annotation,
   - `aggregate`: group and count
   - `enrich`: statistical overrepresentation
   - `paths`: shortest path between two entities
-- **Lightweight analytics on variant lists**: SNP-to-gene, gene-to-function, GWAS summary statistics, gene-to-entity traversals.
-- **Variant effect in cellular context**: predicted effects from multi-omics and IGVF data, scoped to a given cell type.
-- **Experimental variant effect**: measured in CRISPRi, MPRA, MAVE, and base-editing datasets.
-- **Generative UI**: ten inline chat components: bar, comparison, distribution, enrichment, heatmap, network, protein structure, QQ, scatter, stat card.
-- **Persistent workspace**: variant lists, tool outputs, pinned entities survive across turns.
+- **Multi-step workflows** (one agent call each):
+  - variant list → gene → function → pathway, with GWAS stats
+  - variant → predicted cell effect (multi-omics, IGVF)
+  - variant → measured cell effect (CRISPRi, MPRA, MAVE, base editing)
+- **Generative UI**: ten inline chat components (bar, comparison, distribution, enrichment, heatmap, network, protein structure, QQ, scatter, stat card).
+- **Persistent workspace**: variant lists, tool outputs, pinned entities across turns.
 - **AlphaGenome**: async submit-and-poll for DeepMind's variant-effect predictor.
 
 ### Scale and visualization
