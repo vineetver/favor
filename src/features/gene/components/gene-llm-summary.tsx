@@ -3,37 +3,35 @@
 import { useAskFollowUp } from "@features/agent/hooks/use-ask-follow-up";
 import { useGeneSummary } from "@features/gene/hooks/use-gene-summary";
 import type { Gene } from "@features/gene/types";
-import {
-  buildGenePrompt,
-  type GenePromptContext,
-} from "@features/gene/utils/build-gene-prompt";
 import { LLMSummaryCard } from "@shared/components/llm-summary-card";
 import { Button } from "@shared/components/ui/button";
 import { Card } from "@shared/components/ui/card";
 import { useAuth } from "@shared/hooks";
 import { LogIn, Sparkles } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect } from "react";
 
 interface GeneLLMSummaryProps {
   geneId: string;
   gene?: Gene | null;
-  context?: GenePromptContext;
 }
 
 const TITLE_STRIP = /^#{1,3}\s*Gene Summary[:\s].*?\n+/i;
 
-export function GeneLLMSummary({ geneId, gene, context }: GeneLLMSummaryProps) {
+export function GeneLLMSummary({ geneId, gene }: GeneLLMSummaryProps) {
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const askFollowUp = useAskFollowUp();
+  const router = useRouter();
 
-  const prompt = useMemo(
-    () => (gene ? buildGenePrompt(gene, context) : undefined),
-    [gene, context],
-  );
+  useEffect(() => {
+    const base = `/hg38/gene/${encodeURIComponent(geneId)}/gene-level-annotation`;
+    router.prefetch(`${base}/graph-explorer`);
+    router.prefetch(`${base}/expression`);
+    router.prefetch(`${base}/constraints-and-heplo`);
+  }, [router, geneId]);
 
   const { state, retry } = useGeneSummary({
     geneId,
-    prompt,
     enabled: isAuthenticated,
   });
 

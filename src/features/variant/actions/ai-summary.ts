@@ -1,5 +1,19 @@
 "use server";
 
+import {
+  fetchChromBpnetByTissueGroup,
+  fetchMethylationByTissueGroup,
+  fetchQtlsByTissueGroup,
+  fetchRegionSummary,
+  fetchSignalsByTissueGroup,
+  fetchTargetGenes,
+  fetchVariantAllelicImbalanceByTissueGroup,
+} from "@features/enrichment/api/region";
+import { fetchVariantSignals } from "@features/variant/api/credible-sets-graph";
+import { fetchGwasAssociations } from "@features/variant/api/gwas";
+import { buildVariantContext } from "@features/variant/utils/build-variant-context";
+import { buildVariantPrompt } from "@features/variant/utils/build-variant-prompt";
+import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { cookies } from "next/headers";
 import { API_BASE } from "@/config/api";
 
@@ -63,29 +77,92 @@ export async function getVariantSummary(
   return { data };
 }
 
-/**
- * Server action to trigger AI summary generation for a variant
- */
 const MAX_PROMPT_LENGTH = 12000;
 
+/**
+ * Server action to trigger AI summary generation for a variant.
+ * Fetches variant + regulatory/tissue evidence and builds the prompt server-side
+ * so callers don't pay the cost on cache hits.
+ */
 export async function generateVariantSummary(params: {
   vcf: string;
-  prompt: string;
   model?: string;
 }): Promise<GenerateResponse> {
+  if (typeof params.vcf !== "string" || params.vcf.length > 64) {
+    throw new Error("Invalid vcf identifier");
+  }
+
   const cookie = await getAuthCookie();
 
-  if (
-    typeof params.prompt !== "string" ||
-    params.prompt.length > MAX_PROMPT_LENGTH
-  ) {
+  const result = await fetchVariantWithCookie(params.vcf).catch(() => null);
+  if (!result) {
+    throw new Error(`Variant not found: ${params.vcf}`);
+  }
+
+  const variant = result.selected;
+  const loc = `${variant.chromosome}-${variant.position}-${variant.position}`;
+
+  const catchNull = (label: string) => (err: unknown) => {
+    console.error(`[variant-llm] ${label} failed:`, err);
+    return null;
+  };
+  const catchEmpty = (label: string) => (err: unknown) => {
+    console.error(`[variant-llm] ${label} failed:`, err);
+    return [] as never[];
+  };
+
+  const [
+    gwas,
+    credibleSets,
+    targetGenes,
+    qtls,
+    regionSummary,
+    signals,
+    chromBpnet,
+    allelicImbalance,
+    methylation,
+  ] = await Promise.all([
+    fetchGwasAssociations(variant.variant_vcf, { limit: 10 }).catch(
+      catchNull("gwas"),
+    ),
+    fetchVariantSignals(variant.variant_vcf, 100).catch(
+      catchEmpty("credibleSets"),
+    ),
+    fetchTargetGenes(variant.variant_vcf, 10).catch(catchEmpty("targetGenes")),
+    fetchQtlsByTissueGroup(variant.variant_vcf).catch(catchEmpty("qtls")),
+    fetchRegionSummary(loc).catch(catchNull("regionSummary")),
+    fetchSignalsByTissueGroup(loc).catch(catchEmpty("signals")),
+    fetchChromBpnetByTissueGroup(variant.variant_vcf).catch(
+      catchEmpty("chromBpnet"),
+    ),
+    fetchVariantAllelicImbalanceByTissueGroup(variant.variant_vcf).catch(
+      catchEmpty("allelicImbalance"),
+    ),
+    fetchMethylationByTissueGroup(variant.variant_vcf).catch(
+      catchEmpty("methylation"),
+    ),
+  ]);
+
+  const context = buildVariantContext({
+    gwas,
+    credibleSets,
+    targetGenes,
+    qtls,
+    regionSummary,
+    signals,
+    chromBpnet,
+    allelicImbalance,
+    methylation,
+  });
+
+  const prompt = buildVariantPrompt(variant, context);
+
+  if (prompt.length > MAX_PROMPT_LENGTH) {
     throw new Error(
       `Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`,
     );
   }
-  if (typeof params.vcf !== "string" || params.vcf.length > 64) {
-    throw new Error("Invalid vcf identifier");
-  }
+
   const response = await fetch(`${API_BASE}/ai-text/generate`, {
     method: "POST",
     headers: {
@@ -96,7 +173,7 @@ export async function generateVariantSummary(params: {
       entity_type: "variant",
       entity_id: params.vcf,
       content_type: "summary",
-      prompt: params.prompt,
+      prompt,
       model: params.model ?? "gpt-4o-mini",
     }),
   });

@@ -10,8 +10,6 @@ import { useCallback, useEffect, useRef } from "react";
 
 interface UseVariantSummaryOptions {
   vcf: string;
-  /** Custom prompt to use for generation. If not provided, uses default clinical prompt. */
-  prompt?: string;
   modelId?: string;
   enabled?: boolean;
 }
@@ -23,9 +21,6 @@ export type VariantSummaryState =
   | { status: "generating"; requestId: string; estimatedSeconds?: number }
   | { status: "completed"; summary: string; cachedAt?: string }
   | { status: "failed"; error: string };
-
-const DEFAULT_PROMPT =
-  "Provide a comprehensive clinical summary for this genetic variant, including its potential pathogenicity, associated conditions, and clinical significance.";
 
 /**
  * Custom hook for managing variant summary generation and caching
@@ -43,7 +38,6 @@ const DEFAULT_PROMPT =
  */
 export function useVariantSummary({
   vcf,
-  prompt,
   modelId = "gpt-4o-mini",
   enabled = true,
 }: UseVariantSummaryOptions) {
@@ -92,7 +86,6 @@ export function useVariantSummary({
     try {
       const response = await generateVariantSummary({
         vcf,
-        prompt: prompt ?? DEFAULT_PROMPT,
         model: modelId,
       });
 
@@ -183,7 +176,7 @@ export function useVariantSummary({
           error instanceof Error ? error.message : "Failed to generate summary",
       });
     }
-  }, [vcf, prompt, modelId, queryClient]);
+  }, [vcf, modelId, queryClient]);
 
   // Auto-trigger generation when idle and not loading
   // Note: triggerGeneration uses refs internally, so we don't need it in deps

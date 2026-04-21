@@ -25,7 +25,9 @@ import {
   injectSortFields,
   resolveEdgeSelectFields,
 } from "@features/graph/utils/schema-fields";
+import { Skeleton } from "@shared/components/ui/skeleton";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 interface GraphExplorerPageProps {
   params: Promise<{
@@ -38,7 +40,29 @@ export default async function GraphExplorerPage({
 }: GraphExplorerPageProps) {
   const { id } = await params;
 
-  // Fetch gene data, schema, and stats in parallel
+  return (
+    <div className="h-full min-h-[600px]">
+      <Suspense fallback={<GraphExplorerSkeleton />}>
+        <GraphExplorerLoader id={id} />
+      </Suspense>
+    </div>
+  );
+}
+
+function GraphExplorerSkeleton() {
+  return (
+    <div className="flex h-full min-h-[600px] flex-col gap-4">
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-40 rounded-md" />
+        <Skeleton className="h-9 w-28 rounded-md" />
+        <Skeleton className="h-9 w-28 rounded-md" />
+      </div>
+      <Skeleton className="h-full min-h-[560px] w-full rounded-lg" />
+    </div>
+  );
+}
+
+async function GraphExplorerLoader({ id }: { id: string }) {
   const [geneResponse, schemaResponse, statsResponse] = await Promise.all([
     fetchGene(id),
     fetchGraphSchema(),
@@ -46,16 +70,13 @@ export default async function GraphExplorerPage({
   ]);
 
   const gene = geneResponse?.data;
-
   if (!gene) {
     notFound();
   }
 
-  // Extract gene ID and symbol
   const geneId = gene.gene_id_versioned?.split(".")[0] || id;
   const geneSymbol = gene.gene_symbol ?? geneId;
 
-  // Transform schema response to component format
   const schema: GraphSchema | null = schemaResponse?.data
     ? {
         nodeTypes: schemaResponse.data.nodeTypes.map(
@@ -88,7 +109,6 @@ export default async function GraphExplorerPage({
       }
     : null;
 
-  // Transform stats response to component format
   const stats: GraphStats | null = statsResponse?.data
     ? {
         totalNodes: statsResponse.data.totalNodes,
@@ -98,17 +118,14 @@ export default async function GraphExplorerPage({
       }
     : null;
 
-  // Build schema map for sort/field resolution
   const schemaMap = buildEdgeTypeStatsMap(schema);
 
-  // Fetch initial subgraph for default template via /graph/query
   const defaultTemplate = GENE_EXPLORER_CONFIG.templates.find(
     (t) => t.id === GENE_EXPLORER_CONFIG.defaultTemplateId,
   )!;
   let initialSubgraph: InitialSubgraphData | null = null;
 
   try {
-    // Cap per-step limits to 10 for fast initial load
     const cappedSteps = defaultTemplate.steps.map((step) => {
       if (isBranchStep(step)) {
         return {
@@ -121,10 +138,7 @@ export default async function GraphExplorerPage({
       return { ...step, limit: Math.min(step.limit ?? 1000, 10) };
     });
 
-    // Inject schema-driven sorts into steps
     const stepsWithSorts = injectSortFields(cappedSteps, schemaMap);
-
-    // Compute edge fields from schema (or fallback to hardcoded catalog)
     const allEdgeTypes = collectEdgeTypesFromSteps(defaultTemplate.steps);
     const edgeFields = resolveEdgeSelectFields(allEdgeTypes, schemaMap);
 
@@ -162,15 +176,13 @@ export default async function GraphExplorerPage({
   }
 
   return (
-    <div className="h-full min-h-[600px]">
-      <GraphExplorer
-        seed={{ type: "Gene", id: geneId, label: geneSymbol }}
-        config={GENE_EXPLORER_CONFIG}
-        initialSubgraph={initialSubgraph}
-        schema={schema}
-        stats={stats}
-        className="h-full"
-      />
-    </div>
+    <GraphExplorer
+      seed={{ type: "Gene", id: geneId, label: geneSymbol }}
+      config={GENE_EXPLORER_CONFIG}
+      initialSubgraph={initialSubgraph}
+      schema={schema}
+      stats={stats}
+      className="h-full"
+    />
   );
 }

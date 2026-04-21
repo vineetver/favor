@@ -1,5 +1,18 @@
 "use server";
 
+import {
+  fetchAccessibilityByTissueGroup,
+  fetchCcreLinksByTissueGroup,
+  fetchChromatinByTissueGroup,
+  fetchEnhancersByTissueGroup,
+  fetchLoopsByTissueGroup,
+  fetchRegionSummary,
+  fetchSignalsByTissueGroup,
+} from "@features/enrichment/api/region";
+import { fetchGene } from "@features/gene/api";
+import { buildGeneContext } from "@features/gene/utils/build-gene-context";
+import { buildGenePrompt } from "@features/gene/utils/build-gene-prompt";
+import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
 import { cookies } from "next/headers";
 import { API_BASE } from "@/config/api";
 
@@ -63,29 +76,71 @@ export async function getGeneSummary(
   return { data };
 }
 
-/**
- * Server action to trigger AI summary generation for a gene
- */
 const MAX_PROMPT_LENGTH = 12000;
 
+/**
+ * Server action to trigger AI summary generation for a gene.
+ * Fetches gene + regulatory/tissue evidence and builds the prompt server-side
+ * so callers don't pay the cost on cache hits.
+ */
 export async function generateGeneSummary(params: {
   geneId: string;
-  prompt: string;
   model?: string;
 }): Promise<GenerateResponse> {
+  if (typeof params.geneId !== "string" || params.geneId.length > 64) {
+    throw new Error("Invalid geneId");
+  }
+
   const cookie = await getAuthCookie();
 
-  if (
-    typeof params.prompt !== "string" ||
-    params.prompt.length > MAX_PROMPT_LENGTH
-  ) {
+  const geneResponse = await fetchGene(params.geneId).catch(() => null);
+  const gene = geneResponse?.data;
+  if (!gene) {
+    throw new Error(`Gene not found: ${params.geneId}`);
+  }
+
+  const loc = `${gene.chromosome}-${gene.start_position}-${gene.end_position}`;
+  const [
+    regionSummary,
+    signals,
+    chromatin,
+    enhancers,
+    accessibility,
+    loops,
+    ccreLinks,
+    crispr,
+  ] = await Promise.all([
+    fetchRegionSummary(loc).catch(() => null),
+    fetchSignalsByTissueGroup(loc).catch(() => []),
+    fetchChromatinByTissueGroup(loc).catch(() => []),
+    fetchEnhancersByTissueGroup(loc).catch(() => []),
+    fetchAccessibilityByTissueGroup(loc).catch(() => []),
+    fetchLoopsByTissueGroup(loc).catch(() => []),
+    gene.gene_symbol
+      ? fetchCcreLinksByTissueGroup(gene.gene_symbol).catch(() => [])
+      : Promise.resolve([]),
+    fetchCrisprByTissueGroup(loc).catch(() => []),
+  ]);
+
+  const context = buildGeneContext({
+    regionSummary,
+    signals,
+    chromatin,
+    enhancers,
+    accessibility,
+    loops,
+    ccreLinks,
+    crispr,
+  });
+
+  const prompt = buildGenePrompt(gene, context);
+
+  if (prompt.length > MAX_PROMPT_LENGTH) {
     throw new Error(
       `Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`,
     );
   }
-  if (typeof params.geneId !== "string" || params.geneId.length > 64) {
-    throw new Error("Invalid geneId");
-  }
+
   const response = await fetch(`${API_BASE}/ai-text/generate`, {
     method: "POST",
     headers: {
@@ -96,7 +151,7 @@ export async function generateGeneSummary(params: {
       entity_type: "gene",
       entity_id: params.geneId,
       content_type: "summary",
-      prompt: params.prompt,
+      prompt,
       model: params.model ?? "gpt-4o-mini",
     }),
   });

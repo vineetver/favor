@@ -10,7 +10,6 @@ import { useCallback, useEffect, useRef } from "react";
 
 interface UseGeneSummaryOptions {
   geneId: string;
-  prompt?: string;
   modelId?: string;
   enabled?: boolean;
 }
@@ -23,12 +22,8 @@ export type GeneSummaryState =
   | { status: "completed"; summary: string; cachedAt?: string }
   | { status: "failed"; error: string };
 
-const DEFAULT_PROMPT =
-  "Provide a comprehensive summary for this gene, including its function, associated diseases, and clinical significance.";
-
 export function useGeneSummary({
   geneId,
-  prompt,
   modelId = "gpt-4o-mini",
   enabled = true,
 }: UseGeneSummaryOptions) {
@@ -68,7 +63,6 @@ export function useGeneSummary({
     try {
       const response = await generateGeneSummary({
         geneId,
-        prompt: prompt ?? DEFAULT_PROMPT,
         model: modelId,
       });
 
@@ -154,7 +148,7 @@ export function useGeneSummary({
           error instanceof Error ? error.message : "Failed to generate summary",
       });
     }
-  }, [geneId, prompt, modelId, queryClient]);
+  }, [geneId, modelId, queryClient]);
 
   // Auto-trigger generation when idle and not loading
   useEffect(() => {
