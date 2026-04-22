@@ -89,7 +89,12 @@ export function useJobPolling({
     if (detail) {
       return cohortDetailToJob(detail);
     }
-    if (statusData && !statusData.is_terminal) {
+    if (statusData) {
+      // For both running and terminal statuses, synthesize from status so the
+      // UI never gets stuck on a stale "running" card when detail is slow
+      // or failing. A terminal synthesized job is incomplete (no output URL,
+      // no timing), but CompletedJobCard handles missing fields gracefully
+      // and the detail fetch will fill them in on the next tick.
       return cohortDetailToJob({
         id: statusData.id,
         status: statusData.status,
@@ -105,7 +110,6 @@ export function useJobPolling({
         updated_at: "",
       } as CohortDetail);
     }
-    // terminal but detail still loading → null → shows loading state
     return null;
   }, [detail, statusData]);
 
@@ -139,7 +143,12 @@ export function useJobPolling({
     job: job ?? null,
     detail,
     isLoading: statusQuery.isLoading || (isTerminal && detailQuery.isLoading),
-    error: statusQuery.error instanceof Error ? statusQuery.error : null,
+    error:
+      statusQuery.error instanceof Error
+        ? statusQuery.error
+        : detailQuery.error instanceof Error
+          ? detailQuery.error
+          : null,
     dataUpdatedAt: detailQuery.dataUpdatedAt || statusQuery.dataUpdatedAt,
     refetch,
   };
