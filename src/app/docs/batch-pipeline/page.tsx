@@ -39,6 +39,19 @@ export default function BatchPipelineDocsPage() {
           release-to-release changes, read the{" "}
           <Link href="/docs/release-notes">release notes</Link>.
         </Callout>
+
+        <Callout title="Running this offline">
+          The hosted pipeline is one path. For local WGS/WES analysis the
+          recommended tool is the{" "}
+          <Link href="/cli" className="font-medium text-primary">
+            FAVOR CLI
+          </Link>
+          . R-based pipelines using STAARpipeline can keep using{" "}
+          <Link href="/favor-annotator" className="font-medium text-primary">
+            FAVOR Annotator
+          </Link>{" "}
+          against the downloadable FAVOR database.
+        </Callout>
       </div>
 
       <section>

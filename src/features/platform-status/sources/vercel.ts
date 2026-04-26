@@ -32,6 +32,18 @@ interface RawSummary {
   scheduled_maintenances?: RawIncident[];
 }
 
+// Incidents we don't want to surface on our banner — typically because
+// they don't actually affect us (e.g., regional issues outside our deploy
+// region) but Vercel still lists them as active.
+const SUPPRESSED_INCIDENT_IDS = new Set<string>(["r98wgd6yk2q7"]);
+
+function isSuppressed(inc: RawIncident): boolean {
+  if (SUPPRESSED_INCIDENT_IDS.has(inc.id)) return true;
+  return SUPPRESSED_INCIDENT_IDS.has(
+    inc.shortlink.split("/").pop() ?? "",
+  );
+}
+
 export async function fetchVercel(): Promise<ActiveIncident[]> {
   const res = await fetch(VERCEL_URL, {
     signal: AbortSignal.timeout(4000),
@@ -41,9 +53,14 @@ export async function fetchVercel(): Promise<ActiveIncident[]> {
   const json = (await res.json()) as RawSummary;
 
   const active = [
-    ...(json.incidents ?? []).filter((i) => i.status !== "resolved"),
+    ...(json.incidents ?? []).filter(
+      (i) => i.status !== "resolved" && !isSuppressed(i),
+    ),
     ...(json.scheduled_maintenances ?? []).filter(
-      (i) => i.status !== "completed" && i.status !== "resolved",
+      (i) =>
+        i.status !== "completed" &&
+        i.status !== "resolved" &&
+        !isSuppressed(i),
     ),
   ];
 

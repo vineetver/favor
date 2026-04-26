@@ -54,6 +54,19 @@ export default function DataAnnotationsPage() {
         </p>
       </Prose>
 
+      <Callout title="Bulk access">
+        For programmatic access at WGS scale, use the{" "}
+        <Link href="/cli" className="font-medium text-primary">
+          FAVOR CLI
+        </Link>
+        . The full annotation database is also distributed as SQL/Parquet
+        bundles on Harvard Dataverse via{" "}
+        <Link href="/favor-annotator" className="font-medium text-primary">
+          FAVOR Annotator
+        </Link>{" "}
+        if you need the raw files.
+      </Callout>
+
       {/* ── Variant set ── */}
       <div className="mt-10">
         <Prose>

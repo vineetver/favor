@@ -72,6 +72,21 @@ export default function FavorAnnotatorPage() {
             </p>
           </div>
 
+          <div className="mt-8 rounded-lg border border-amber-500/30 bg-amber-500/5 px-5 py-4 text-sm text-foreground">
+            <p className="font-medium">Heads up — these are 2024 datasets.</p>
+            <p className="mt-1 text-muted-foreground">
+              The downloads below are from the 2024 FAVOR release, not the 2026
+              version. For access to the 2026 datasets, contact{" "}
+              <a
+                href="mailto:favor@genohub.org"
+                className="text-primary hover:underline"
+              >
+                favor@genohub.org
+              </a>
+              .
+            </p>
+          </div>
+
           <div className="mt-10">
             <DatasetTabs />
           </div>

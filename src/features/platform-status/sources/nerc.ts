@@ -52,26 +52,36 @@ export async function fetchNerc(): Promise<ActiveIncident[]> {
 
   const scopesById = new Map<string, Set<Scope>>();
   const metaById = new Map<string, RawIncident>();
+  // Track whether any component referencing the incident is non-operational.
+  // NERC leaves stale `activeIncidents` attached to components even after the
+  // components recover, until the incident itself is marked RESOLVED. We
+  // suppress incidents whose components have all returned to OPERATIONAL.
+  const hasLiveImpactById = new Map<string, boolean>();
 
   for (const component of components) {
     const scope = scopeForComponent(component);
+    const componentLive = component.status !== "OPERATIONAL";
     for (const inc of component.activeIncidents ?? []) {
       if (!scopesById.has(inc.id)) {
         scopesById.set(inc.id, new Set());
         metaById.set(inc.id, inc);
+        hasLiveImpactById.set(inc.id, false);
       }
       scopesById.get(inc.id)?.add(scope);
+      if (componentLive) hasLiveImpactById.set(inc.id, true);
     }
   }
 
-  return Array.from(metaById.entries()).map(([id, inc]) => ({
-    id: `nerc:${id}`,
-    source: "nerc" as const,
-    name: inc.name,
-    impact: IMPACT_MAP[inc.impact] ?? "minor",
-    state: STATE_MAP[inc.status] ?? "investigating",
-    scopes: Array.from(scopesById.get(id) ?? []),
-    url: inc.url,
-    startedAt: inc.started,
-  }));
+  return Array.from(metaById.entries())
+    .filter(([id]) => hasLiveImpactById.get(id))
+    .map(([id, inc]) => ({
+      id: `nerc:${id}`,
+      source: "nerc" as const,
+      name: inc.name,
+      impact: IMPACT_MAP[inc.impact] ?? "minor",
+      state: STATE_MAP[inc.status] ?? "investigating",
+      scopes: Array.from(scopesById.get(id) ?? []),
+      url: inc.url,
+      startedAt: inc.started,
+    }));
 }

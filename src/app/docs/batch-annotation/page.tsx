@@ -67,6 +67,20 @@ export default function BatchAnnotationDocsPage() {
         </p>
       </Prose>
 
+      <Callout title="Working offline or at WGS scale?">
+        For files larger than the upload limit or air-gapped environments, use
+        the{" "}
+        <Link href="/cli" className="font-medium text-primary">
+          FAVOR CLI
+        </Link>{" "}
+        — runs annotation, tissue context, and rare-variant tests on your own
+        hardware. Existing R/STAARpipeline users can stick with the{" "}
+        <Link href="/favor-annotator" className="font-medium text-primary">
+          FAVOR Annotator
+        </Link>
+        .
+      </Callout>
+
       <section className="space-y-4">
         <h2
           id="before-you-upload"

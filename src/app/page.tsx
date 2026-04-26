@@ -2,7 +2,13 @@
 
 import { UniversalSearch } from "@features/search";
 import { useAuth } from "@shared/hooks";
-import { ArrowUpRight, FileText, UploadCloud } from "lucide-react";
+import {
+  ArrowUpRight,
+  Download,
+  FileText,
+  Terminal,
+  UploadCloud,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
@@ -96,26 +102,27 @@ export default function HomePage() {
           <div className="w-full max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold tracking-tight text-foreground mb-4">
-                Batch Processing
+                Upload a variant file
               </h2>
               <p className="text-muted-foreground text-xl max-w-xl mx-auto">
-                Upload VCF or CSV files for large-scale annotation.
+                CSV, TSV, VCF, or Parquet. Get back an annotated variant list
+                you can query, browse, and download.
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
               {/* Documentation Card */}
-              <div className="bg-card rounded-[2.5rem] p-12 shadow-2xl border border-border flex flex-col justify-between h-[500px] relative overflow-hidden group">
+              <div className="bg-card rounded-[2.5rem] p-12 shadow-2xl border border-border flex flex-col justify-between h-[500px] relative overflow-hidden group transition-transform hover:scale-[1.01] duration-300">
                 <div className="relative z-10">
                   <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-8 text-foreground">
                     <FileText className="w-7 h-7" />
                   </div>
                   <h3 className="text-3xl font-bold text-foreground mb-4 tracking-tight">
-                    Documentation & Specs
+                    Documentation
                   </h3>
                   <p className="text-muted-foreground text-lg leading-relaxed pr-8">
-                    Review the file formatting guidelines to ensure perfect
-                    parsing of your variant data.
+                    What columns we accept, what identifier styles we recognize,
+                    and what makes a file parse cleanly.
                   </p>
                 </div>
                 <div className="relative z-10 pt-8">
@@ -143,16 +150,104 @@ export default function HomePage() {
                     <UploadCloud className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-3xl font-bold mb-3 tracking-tight">
-                    Upload Dataset
+                    Upload a file
                   </h3>
                   <p className="text-muted-foreground text-lg mb-10 max-w-sm">
-                    Drag & drop your VCF file here, or click to browse.
+                    CSV, TSV, VCF, or Parquet. We handle parsing and column
+                    mapping.
                   </p>
                   <span className="inline-flex px-5 py-2.5 rounded-full bg-white/10 border border-white/5 text-sm font-medium backdrop-blur-md">
-                    Max file size: 50MB
+                    Up to 50MB
                   </span>
                 </div>
               </Link>
+            </div>
+          </div>
+
+          {/* Offline & Programmatic Section */}
+          <div className="w-full max-w-6xl mx-auto mt-32">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold tracking-tight text-foreground mb-4">
+                Run it locally
+              </h2>
+              <p className="text-muted-foreground text-xl max-w-xl mx-auto">
+                Skip the upload. The CLI for new work, the R Annotator for
+                existing STAARpipeline setups.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* CLI Card — the modern, recommended path */}
+              <div className="bg-card rounded-[2.5rem] p-12 shadow-2xl border border-border flex flex-col justify-between h-[500px] relative overflow-hidden group transition-transform hover:scale-[1.01] duration-300">
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center text-foreground">
+                      <Terminal className="w-7 h-7" />
+                    </div>
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                      Recommended
+                    </span>
+                  </div>
+                  <h3 className="text-3xl font-bold text-foreground mb-4 tracking-tight">
+                    FAVOR CLI
+                  </h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed pr-8">
+                    Annotate, add tissue context, and run rare-variant tests on
+                    your own hardware. Replaces the R Annotator for new work.
+                  </p>
+                </div>
+                <div className="relative z-10 pt-8 flex items-center justify-between gap-4">
+                  <Link
+                    href="/cli"
+                    className="text-base font-semibold text-foreground flex items-center gap-2 hover:gap-3 transition-all"
+                  >
+                    Install CLI <ArrowUpRight className="w-5 h-5" />
+                  </Link>
+                  <a
+                    href="https://github.com/vineetver/favor-cli"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                  >
+                    Source on GitHub <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                </div>
+                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-purple-50 rounded-full blur-3xl opacity-50 group-hover:scale-150 transition-transform duration-700"></div>
+              </div>
+
+              {/* Annotator Card — legacy R + downloadable DB */}
+              <div className="bg-card rounded-[2.5rem] p-12 shadow-2xl border border-border flex flex-col justify-between h-[500px] relative overflow-hidden group transition-transform hover:scale-[1.01] duration-300">
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-8 text-foreground">
+                    <Download className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-foreground mb-4 tracking-tight">
+                    FAVOR Annotator
+                  </h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed pr-8">
+                    R program plus the FAVOR database (Essential and Full) on
+                    Harvard Dataverse. For existing STAARpipeline setups — for
+                    new work, use the CLI.
+                  </p>
+                </div>
+                <div className="relative z-10 pt-8 flex items-center justify-between gap-4">
+                  <Link
+                    href="/favor-annotator"
+                    className="text-base font-semibold text-foreground flex items-center gap-2 hover:gap-3 transition-all"
+                  >
+                    Get Annotator & DB <ArrowUpRight className="w-5 h-5" />
+                  </Link>
+                  <a
+                    href="https://github.com/zhouhufeng/FAVORannotator"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                  >
+                    Source on GitHub <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                </div>
+                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-purple-50 rounded-full blur-3xl opacity-50 group-hover:scale-150 transition-transform duration-700"></div>
+              </div>
             </div>
           </div>
         </div>

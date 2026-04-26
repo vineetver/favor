@@ -7,7 +7,7 @@ import {
 import { ArrowRight, ChevronDown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Prose } from "./_components/doc-primitives";
+import { Callout, Prose } from "./_components/doc-primitives";
 import { DocsToc, type TocItem } from "./_components/docs-toc";
 import { StatBanner } from "./_components/stat-banner";
 
@@ -134,6 +134,19 @@ export default function DocsPage() {
           use the engineering reference pages under <em>Under the hood</em>.
         </p>
       </Prose>
+
+      <Callout title="Running offline?">
+        Use the{" "}
+        <Link href="/cli" className="font-medium text-primary">
+          FAVOR CLI
+        </Link>{" "}
+        for local annotation, tissue context, and rare-variant testing. For
+        legacy R/STAARpipeline workflows, the{" "}
+        <Link href="/favor-annotator" className="font-medium text-primary">
+          FAVOR Annotator
+        </Link>{" "}
+        and downloadable databases are still available.
+      </Callout>
 
       <div className="mt-6">
         <StatBanner stats={stats} />
