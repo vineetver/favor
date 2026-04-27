@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/vineetver/favor/actions/workflows/ci.yml"><img src="https://github.com/vineetver/favor/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/vineetver/favor/actions/workflows/ci.yml?query=branch%3Abeta"><img src="https://github.com/vineetver/favor/actions/workflows/ci.yml/badge.svg?branch=beta" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/next.js-16-black" alt="Next.js">
   <img src="https://img.shields.io/badge/react-19-61dafb" alt="React">
