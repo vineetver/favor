@@ -243,7 +243,7 @@ export async function uploadFile(
     // error" 400s even though the body is well-formed. Original file bytes
     // are unchanged — only the metadata label is replaced.
     const safeName =
-      file.name.replace(/[^\w.\-]+/g, "_").replace(/^_+|_+$/g, "") || "upload";
+      file.name.replace(/[^\w.-]+/g, "_").replace(/^_+|_+$/g, "") || "upload";
     form.append("file", file, safeName);
 
     xhr.open("POST", `${API_BASE}/cohorts/upload`);

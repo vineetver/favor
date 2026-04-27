@@ -1,4 +1,4 @@
-import { resolveAuth, type AuthUser } from "@infra/auth/server";
+import { type AuthUser, resolveAuth } from "@infra/auth/server";
 
 /** Verify the caller is authenticated. */
 export async function getAuthUser(req: Request): Promise<AuthUser | null> {

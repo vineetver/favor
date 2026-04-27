@@ -12,11 +12,11 @@ import {
   fetchVariantAllelicImbalanceByTissueGroup,
 } from "@features/enrichment/api/region";
 import { TargetGenesView } from "@features/enrichment/components/target-genes-view";
-import { resolveGeneIds } from "@features/gene/api";
 import {
   type TissueEvidenceData,
   TissueEvidenceSummary,
 } from "@features/enrichment/components/tissue-evidence-summary";
+import { resolveGeneIds } from "@features/gene/api";
 import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { notFound } from "next/navigation";

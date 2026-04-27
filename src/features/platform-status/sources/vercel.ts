@@ -39,9 +39,7 @@ const SUPPRESSED_INCIDENT_IDS = new Set<string>(["r98wgd6yk2q7"]);
 
 function isSuppressed(inc: RawIncident): boolean {
   if (SUPPRESSED_INCIDENT_IDS.has(inc.id)) return true;
-  return SUPPRESSED_INCIDENT_IDS.has(
-    inc.shortlink.split("/").pop() ?? "",
-  );
+  return SUPPRESSED_INCIDENT_IDS.has(inc.shortlink.split("/").pop() ?? "");
 }
 
 export async function fetchVercel(): Promise<ActiveIncident[]> {
@@ -58,9 +56,7 @@ export async function fetchVercel(): Promise<ActiveIncident[]> {
     ),
     ...(json.scheduled_maintenances ?? []).filter(
       (i) =>
-        i.status !== "completed" &&
-        i.status !== "resolved" &&
-        !isSuppressed(i),
+        i.status !== "completed" && i.status !== "resolved" && !isSuppressed(i),
     ),
   ];
 

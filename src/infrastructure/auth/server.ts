@@ -37,9 +37,10 @@ export async function resolveAuth(
       headers: { Cookie: cookie },
     }).catch(() => null);
     if (res?.ok) {
-      const data = (await res.json().catch(() => null)) as
-        | { sub?: string; email?: string }
-        | null;
+      const data = (await res.json().catch(() => null)) as {
+        sub?: string;
+        email?: string;
+      } | null;
       if (data?.sub) {
         return {
           headers: { Cookie: cookie },

@@ -272,367 +272,370 @@ function buildColumns(
   geneIdMap: Record<string, string>,
 ): ColumnDef<TargetGeneEvidence, unknown>[] {
   return [
-  {
-    id: "gene_symbol",
-    accessorKey: "gene_symbol",
-    header: "Gene",
-    enableSorting: false,
-    meta: {
-      description:
-        "Target gene linked to this variant through regulatory evidence",
-    } satisfies ColumnMeta,
-    cell: ({ getValue }) => {
-      const gene = getValue() as string;
-      const isReadthrough = /^[A-Z0-9]+-[A-Z0-9]+$/.test(gene);
-      const ensemblId = geneIdMap[gene];
-      const href = ensemblId
-        ? `/hg38/gene/${ensemblId}/gene-level-annotation/llm-summary`
-        : `/hg38/gene/${encodeURIComponent(gene)}`;
-      return (
-        <div className="flex items-center gap-1.5">
-          <Link
-            href={href}
-            className="text-sm font-medium text-primary hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {gene}
-          </Link>
-          {isReadthrough && (
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-[10px] text-muted-foreground/60 leading-none">
-                    RT
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs max-w-xs">
-                  Readthrough transcript spanning{" "}
-                  {gene.split("-").join(" and ")}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    id: "evidence",
-    accessorFn: (r) => getPresentSources(r).size,
-    header: "Evidence",
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description:
-        "Sources with evidence for this gene. Filled dot = source present, empty = not covered.",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const present = getPresentSources(row.original);
-      const filled = present.size;
-
-      return (
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1.5">
-                <div className="flex flex-col gap-[3px]">
-                  <div className="flex gap-[3px]">
-                    {Array.from({ length: 9 }, (_, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          i < filled ? "bg-primary" : "bg-border",
-                        )}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex gap-[3px]">
-                    {Array.from({ length: 9 }, (_, i) => (
-                      <div
-                        key={i + 9}
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          i + 9 < filled ? "bg-primary" : "bg-border",
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {filled}/{TOTAL_SOURCES}
-                </span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs min-w-[180px]">
-              <p className="font-medium mb-2">
-                {filled} of {TOTAL_SOURCES} sources
-              </p>
-              {CATEGORIES.map((cat) => {
-                const catSources = ALL_SOURCES.filter(
-                  (s) => s.category === cat,
-                );
-                const catLabel = CATEGORY_META[cat]?.label ?? cat;
-                return (
-                  <div key={cat} className="mb-1.5 last:mb-0">
-                    <p className="font-medium opacity-70 mb-0.5">{catLabel}</p>
-                    {catSources.map((s) => {
-                      const active = present.has(s.source);
-                      return (
-                        <p
-                          key={s.source}
-                          className={cn("pl-2", !active && "opacity-30")}
-                        >
-                          {active ? "✓" : "–"} {s.label}
-                        </p>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    },
-  },
-  {
-    id: "top_tissues",
-    accessorKey: "tissue_count",
-    header: "Top Tissues",
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description:
-        "Top tissues with the strongest evidence for this variant→gene link. Green dot = significant.",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const tissues = row.original.top_tissues ?? [];
-      if (tissues.length === 0) return <Dash />;
-      const shown = tissues.slice(0, 3);
-      const remaining = tissues.length - shown.length;
-      return (
-        <div className="flex flex-wrap items-center gap-1">
-          {shown.map((t, i) => (
-            <TooltipProvider key={`${t.tissue}-${i}`} delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] cursor-default max-w-[140px]",
-                      t.significant
-                        ? "bg-emerald-500/10 text-emerald-700"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {t.significant && (
-                      <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
-                    )}
-                    <span className="truncate">
-                      {t.tissue_group ?? formatTissueName(t.tissue)}
-                    </span>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs max-w-xs">
-                  <p className="font-medium">{formatTissueName(t.tissue)}</p>
-                  {t.tissue_group && (
-                    <p className="text-muted-foreground">{t.tissue_group}</p>
-                  )}
-                  <p>Sources: {t.sources.join(", ")}</p>
-                  {t.best_score != null && (
-                    <p>Best score: {fmtScore(t.best_score)}</p>
-                  )}
-                  {t.best_neglog_p != null && (
-                    <p>Best p-value: {fmtPvalue(t.best_neglog_p)}</p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ))}
-          {remaining > 0 && (
-            <span className="text-[11px] text-muted-foreground">
-              +{remaining}
-            </span>
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    id: "tissue_count",
-    accessorKey: "tissue_count",
-    header: "Tissues",
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description: "Distinct tissues with evidence for this variant→gene link",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const v = row.original.tissue_count;
-      const strength = classify(v, 50, 10);
-      return (
-        <StrengthCell
-          strength={strength}
-          label={`${v}`}
-          detail={`Evidence in ${v} distinct tissue${v !== 1 ? "s" : ""}`}
-        />
-      );
-    },
-  },
-  {
-    id: "max_score",
-    accessorKey: "max_score",
-    header: "Best Score",
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description:
-        "Highest score from any source. Scores are not comparable across methods (ABC: 0–1 probability, ChIA-PET: interaction count, GeneHancer: confidence, SCREEN: 0–1 probability).",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const sources = row.original.sources ?? [];
-      const best = sources.reduce<{ label: string; score: number } | null>(
-        (acc, s) => {
-          if (s.best_score == null) return acc;
-          if (!acc || s.best_score > acc.score)
-            return { label: s.label, score: s.best_score };
-          return acc;
-        },
-        null,
-      );
-      if (!best) return <Dash />;
-      return (
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-xs text-foreground tabular-nums cursor-default">
-                {fmtScore(best.score)}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs max-w-xs">
-              <p>
-                {fmtScore(best.score)} from {best.label}
-              </p>
-              <p className="opacity-60">
-                Scores vary by method and are not directly comparable
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    },
-  },
-  {
-    id: "max_neglog_p",
-    accessorKey: "max_neglog_p",
-    header: "Best p-value",
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description: "Strongest QTL p-value across all sources",
-    } satisfies ColumnMeta,
-    cell: ({ getValue }) => {
-      const v = getValue() as number | undefined;
-      if (v == null) return <Dash />;
-      const strength = classify(v, 8, 3);
-      return (
-        <StrengthCell
-          strength={strength}
-          label={fmtPvalue(v)}
-          detail={`−log₁₀(p) = ${v.toFixed(1)}${v >= 8 ? " (genome-wide significant)" : ""}`}
-        />
-      );
-    },
-  },
-  {
-    id: "significant_count",
-    accessorKey: "significant_count",
-    header: "Sig. QTLs",
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description:
-        "QTL associations passing their study's significance or credible set threshold. Non-QTL sources (enhancer, cCRE, computational) contribute through scores instead.",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const sig = row.original.significant_count;
-      if (sig === 0) return <Dash />;
-      const strength: Strength =
-        sig >= 10 ? "strong" : sig >= 3 ? "moderate" : "low";
-      return (
-        <StrengthCell
-          strength={strength}
-          label={`${sig}`}
-          detail={`${sig} QTL association${sig !== 1 ? "s" : ""} passed significance/credible set thresholds`}
-        />
-      );
-    },
-  },
-  {
-    id: "essential_crispr",
-    accessorFn: (r) => r.crispr_significant ?? null,
-    header: () => (
-      <span className="flex flex-col leading-tight">
-        <span>Essential</span>
-        <span>CRISPR</span>
-      </span>
-    ),
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description:
-        "CRISPR essentiality across cell lines. Shows how many screens found this gene essential out of total screens tested.",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const total = row.original.crispr_total;
-      const sig = row.original.crispr_significant;
-      if (total == null || total === 0) return <Dash />;
-      if (sig == null || sig === 0) {
+    {
+      id: "gene_symbol",
+      accessorKey: "gene_symbol",
+      header: "Gene",
+      enableSorting: false,
+      meta: {
+        description:
+          "Target gene linked to this variant through regulatory evidence",
+      } satisfies ColumnMeta,
+      cell: ({ getValue }) => {
+        const gene = getValue() as string;
+        const isReadthrough = /^[A-Z0-9]+-[A-Z0-9]+$/.test(gene);
+        const ensemblId = geneIdMap[gene];
+        const href = ensemblId
+          ? `/hg38/gene/${ensemblId}/gene-level-annotation/llm-summary`
+          : `/hg38/gene/${encodeURIComponent(gene)}`;
         return (
-          <span className="text-xs text-muted-foreground">Non-essential</span>
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={href}
+              className="text-sm font-medium text-primary hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {gene}
+            </Link>
+            {isReadthrough && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-[10px] text-muted-foreground/60 leading-none">
+                      RT
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs max-w-xs">
+                    Readthrough transcript spanning{" "}
+                    {gene.split("-").join(" and ")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         );
-      }
-      const pct = Math.round((sig / total) * 100);
-      const strength: Strength =
-        pct >= 50 ? "strong" : pct >= 10 ? "moderate" : "low";
-      return (
-        <StrengthCell
-          strength={strength}
-          label={`${pct}% (${sig}/${total})`}
-          detail={`Essential in ${sig} of ${total} CRISPR screens (${pct}%)`}
-        />
-      );
+      },
     },
-  },
-  {
-    id: "ko_targets",
-    accessorFn: (r) => r.perturb_seq_downstream_genes ?? null,
-    header: () => (
-      <span className="flex flex-col leading-tight">
-        <span>KO Targets</span>
-        <span>Perturb-seq</span>
-      </span>
-    ),
-    enableSorting: true,
-    sortDescFirst: true,
-    meta: {
-      description:
-        "Downstream genes significantly affected when this target gene is knocked out (perturb-seq). Shows how many genes are causally affected if this variant disrupts its target.",
-    } satisfies ColumnMeta,
-    cell: ({ row }) => {
-      const n = row.original.perturb_seq_downstream_genes;
-      if (n == null || n === 0) return <Dash />;
-      const strength: Strength =
-        n >= 100 ? "strong" : n >= 20 ? "moderate" : "low";
-      return (
-        <StrengthCell
-          strength={strength}
-          label={`${n} genes`}
-          detail={`${n} downstream genes causally affected if this variant disrupts ${row.original.gene_symbol}`}
-        />
-      );
+    {
+      id: "evidence",
+      accessorFn: (r) => getPresentSources(r).size,
+      header: "Evidence",
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "Sources with evidence for this gene. Filled dot = source present, empty = not covered.",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const present = getPresentSources(row.original);
+        const filled = present.size;
+
+        return (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex flex-col gap-[3px]">
+                    <div className="flex gap-[3px]">
+                      {Array.from({ length: 9 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            i < filled ? "bg-primary" : "bg-border",
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex gap-[3px]">
+                      {Array.from({ length: 9 }, (_, i) => (
+                        <div
+                          key={i + 9}
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            i + 9 < filled ? "bg-primary" : "bg-border",
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {filled}/{TOTAL_SOURCES}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs min-w-[180px]">
+                <p className="font-medium mb-2">
+                  {filled} of {TOTAL_SOURCES} sources
+                </p>
+                {CATEGORIES.map((cat) => {
+                  const catSources = ALL_SOURCES.filter(
+                    (s) => s.category === cat,
+                  );
+                  const catLabel = CATEGORY_META[cat]?.label ?? cat;
+                  return (
+                    <div key={cat} className="mb-1.5 last:mb-0">
+                      <p className="font-medium opacity-70 mb-0.5">
+                        {catLabel}
+                      </p>
+                      {catSources.map((s) => {
+                        const active = present.has(s.source);
+                        return (
+                          <p
+                            key={s.source}
+                            className={cn("pl-2", !active && "opacity-30")}
+                          >
+                            {active ? "✓" : "–"} {s.label}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
     },
-  },
+    {
+      id: "top_tissues",
+      accessorKey: "tissue_count",
+      header: "Top Tissues",
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "Top tissues with the strongest evidence for this variant→gene link. Green dot = significant.",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const tissues = row.original.top_tissues ?? [];
+        if (tissues.length === 0) return <Dash />;
+        const shown = tissues.slice(0, 3);
+        const remaining = tissues.length - shown.length;
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {shown.map((t, i) => (
+              <TooltipProvider key={`${t.tissue}-${i}`} delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] cursor-default max-w-[140px]",
+                        t.significant
+                          ? "bg-emerald-500/10 text-emerald-700"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {t.significant && (
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
+                      )}
+                      <span className="truncate">
+                        {t.tissue_group ?? formatTissueName(t.tissue)}
+                      </span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs max-w-xs">
+                    <p className="font-medium">{formatTissueName(t.tissue)}</p>
+                    {t.tissue_group && (
+                      <p className="text-muted-foreground">{t.tissue_group}</p>
+                    )}
+                    <p>Sources: {t.sources.join(", ")}</p>
+                    {t.best_score != null && (
+                      <p>Best score: {fmtScore(t.best_score)}</p>
+                    )}
+                    {t.best_neglog_p != null && (
+                      <p>Best p-value: {fmtPvalue(t.best_neglog_p)}</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+            {remaining > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                +{remaining}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "tissue_count",
+      accessorKey: "tissue_count",
+      header: "Tissues",
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "Distinct tissues with evidence for this variant→gene link",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const v = row.original.tissue_count;
+        const strength = classify(v, 50, 10);
+        return (
+          <StrengthCell
+            strength={strength}
+            label={`${v}`}
+            detail={`Evidence in ${v} distinct tissue${v !== 1 ? "s" : ""}`}
+          />
+        );
+      },
+    },
+    {
+      id: "max_score",
+      accessorKey: "max_score",
+      header: "Best Score",
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "Highest score from any source. Scores are not comparable across methods (ABC: 0–1 probability, ChIA-PET: interaction count, GeneHancer: confidence, SCREEN: 0–1 probability).",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const sources = row.original.sources ?? [];
+        const best = sources.reduce<{ label: string; score: number } | null>(
+          (acc, s) => {
+            if (s.best_score == null) return acc;
+            if (!acc || s.best_score > acc.score)
+              return { label: s.label, score: s.best_score };
+            return acc;
+          },
+          null,
+        );
+        if (!best) return <Dash />;
+        return (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-foreground tabular-nums cursor-default">
+                  {fmtScore(best.score)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-xs">
+                <p>
+                  {fmtScore(best.score)} from {best.label}
+                </p>
+                <p className="opacity-60">
+                  Scores vary by method and are not directly comparable
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
+    },
+    {
+      id: "max_neglog_p",
+      accessorKey: "max_neglog_p",
+      header: "Best p-value",
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description: "Strongest QTL p-value across all sources",
+      } satisfies ColumnMeta,
+      cell: ({ getValue }) => {
+        const v = getValue() as number | undefined;
+        if (v == null) return <Dash />;
+        const strength = classify(v, 8, 3);
+        return (
+          <StrengthCell
+            strength={strength}
+            label={fmtPvalue(v)}
+            detail={`−log₁₀(p) = ${v.toFixed(1)}${v >= 8 ? " (genome-wide significant)" : ""}`}
+          />
+        );
+      },
+    },
+    {
+      id: "significant_count",
+      accessorKey: "significant_count",
+      header: "Sig. QTLs",
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "QTL associations passing their study's significance or credible set threshold. Non-QTL sources (enhancer, cCRE, computational) contribute through scores instead.",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const sig = row.original.significant_count;
+        if (sig === 0) return <Dash />;
+        const strength: Strength =
+          sig >= 10 ? "strong" : sig >= 3 ? "moderate" : "low";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={`${sig}`}
+            detail={`${sig} QTL association${sig !== 1 ? "s" : ""} passed significance/credible set thresholds`}
+          />
+        );
+      },
+    },
+    {
+      id: "essential_crispr",
+      accessorFn: (r) => r.crispr_significant ?? null,
+      header: () => (
+        <span className="flex flex-col leading-tight">
+          <span>Essential</span>
+          <span>CRISPR</span>
+        </span>
+      ),
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "CRISPR essentiality across cell lines. Shows how many screens found this gene essential out of total screens tested.",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const total = row.original.crispr_total;
+        const sig = row.original.crispr_significant;
+        if (total == null || total === 0) return <Dash />;
+        if (sig == null || sig === 0) {
+          return (
+            <span className="text-xs text-muted-foreground">Non-essential</span>
+          );
+        }
+        const pct = Math.round((sig / total) * 100);
+        const strength: Strength =
+          pct >= 50 ? "strong" : pct >= 10 ? "moderate" : "low";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={`${pct}% (${sig}/${total})`}
+            detail={`Essential in ${sig} of ${total} CRISPR screens (${pct}%)`}
+          />
+        );
+      },
+    },
+    {
+      id: "ko_targets",
+      accessorFn: (r) => r.perturb_seq_downstream_genes ?? null,
+      header: () => (
+        <span className="flex flex-col leading-tight">
+          <span>KO Targets</span>
+          <span>Perturb-seq</span>
+        </span>
+      ),
+      enableSorting: true,
+      sortDescFirst: true,
+      meta: {
+        description:
+          "Downstream genes significantly affected when this target gene is knocked out (perturb-seq). Shows how many genes are causally affected if this variant disrupts its target.",
+      } satisfies ColumnMeta,
+      cell: ({ row }) => {
+        const n = row.original.perturb_seq_downstream_genes;
+        if (n == null || n === 0) return <Dash />;
+        const strength: Strength =
+          n >= 100 ? "strong" : n >= 20 ? "moderate" : "low";
+        return (
+          <StrengthCell
+            strength={strength}
+            label={`${n} genes`}
+            detail={`${n} downstream genes causally affected if this variant disrupts ${row.original.gene_symbol}`}
+          />
+        );
+      },
+    },
   ];
 }
 
