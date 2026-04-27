@@ -12,6 +12,7 @@ import {
   fetchVariantAllelicImbalanceByTissueGroup,
 } from "@features/enrichment/api/region";
 import { TargetGenesView } from "@features/enrichment/components/target-genes-view";
+import { resolveGeneIds } from "@features/gene/api";
 import {
   type TissueEvidenceData,
   TissueEvidenceSummary,
@@ -75,6 +76,10 @@ export default async function VariantRegulatoryOverviewPage({
     fetchTargetGenes(ref, 50).catch(catchEmpty("targetGenes")),
   ]);
 
+  const geneIdMap = targetGenes.length
+    ? await resolveGeneIds(targetGenes.map((g) => g.gene_symbol))
+    : new Map<string, string>();
+
   const evidence: TissueEvidenceData = {
     signals,
     chromatin,
@@ -99,7 +104,11 @@ export default async function VariantRegulatoryOverviewPage({
       </section>
 
       <section>
-        <TargetGenesView data={targetGenes} variantVcf={ref} />
+        <TargetGenesView
+          data={targetGenes}
+          variantVcf={ref}
+          geneIdMap={Object.fromEntries(geneIdMap.entries())}
+        />
       </section>
     </div>
   );

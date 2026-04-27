@@ -1,4 +1,6 @@
 import { fetchOrNull } from "@infra/api";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import type { Gene } from "../types";
 
 // Re-export all graph API functions for backward compatibility
@@ -85,14 +87,112 @@ export interface FetchGeneOptions {
   cursorAgreements?: string;
 }
 
+/** Ensembl gene IDs are `ENSG` followed by digits (optionally `.<version>`). */
+const ENSEMBL_GENE_RE = /^ENSG\d+(\.\d+)?$/i;
+
+interface ResolveResult {
+  query: string;
+  status: string;
+  entity?: { type: string; id: string; label?: string };
+}
+
+interface ResolveResponse {
+  data: { results: ResolveResult[] };
+}
+
+/** Strip a versioned Ensembl ID (`ENSG…\.20`) down to its stable form. */
+function canonicalEnsemblId(ref: string): string {
+  return ref.split(".")[0].toUpperCase();
+}
+
 /**
- * Fetches gene data from the graph API
+ * Cross-request cache for symbol→ENSG resolution. Symbol/Ensembl mappings are
+ * stable in the gene database, so a long TTL is safe; sorted-key composition
+ * means {TP53,BRCA1} and {BRCA1,TP53} hit the same entry.
+ */
+const resolveSymbolsCached = unstable_cache(
+  async (sortedSymbols: string[]): Promise<Record<string, string>> => {
+    const response = await fetch(`${API_BASE}/graph/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ queries: sortedSymbols }),
+    }).catch(() => null);
+    if (!response?.ok) return {};
+    const body = (await response
+      .json()
+      .catch(() => null)) as ResolveResponse | null;
+    const out: Record<string, string> = {};
+    for (const r of body?.data?.results ?? []) {
+      if (r.status === "matched" && r.entity?.type === "Gene") {
+        out[r.query] = r.entity.id;
+      }
+    }
+    return out;
+  },
+  ["gene-resolve-symbols"],
+  { revalidate: 86400 },
+);
+
+/**
+ * Batch-resolve gene references (HGNC symbols or Ensembl IDs) to canonical
+ * Ensembl gene IDs. Returns a Map keyed by the original input string. Inputs
+ * that are already Ensembl IDs are short-circuited locally (no network call).
+ * The remaining symbols are sent in a single POST to `/graph/resolve`.
+ */
+export async function resolveGeneIds(
+  refs: readonly string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const symbolSet = new Set<string>();
+
+  for (const raw of refs) {
+    if (!raw) continue;
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    if (out.has(trimmed)) continue;
+    if (ENSEMBL_GENE_RE.test(trimmed)) {
+      out.set(trimmed, canonicalEnsemblId(trimmed));
+    } else {
+      symbolSet.add(trimmed);
+    }
+  }
+
+  if (symbolSet.size === 0) return out;
+
+  const sorted = [...symbolSet].sort();
+  const resolved = await resolveSymbolsCached(sorted);
+  for (const [symbol, ensemblId] of Object.entries(resolved)) {
+    out.set(symbol, ensemblId);
+  }
+  return out;
+}
+
+/**
+ * Resolve a single gene reference. Memoized per-render via React `cache()`
+ * so multiple layouts/pages on the same render share a single roundtrip.
+ */
+export const resolveGeneId = cache(
+  async (ref: string): Promise<string | null> => {
+    if (!ref) return null;
+    const trimmed = ref.trim();
+    if (ENSEMBL_GENE_RE.test(trimmed)) return canonicalEnsemblId(trimmed);
+    const map = await resolveGeneIds([trimmed]);
+    return map.get(trimmed) ?? null;
+  },
+);
+
+/**
+ * Fetches gene data from the graph API. Accepts either an Ensembl gene ID
+ * (e.g. `ENSG00000141510`) or an HGNC gene symbol (e.g. `TP53`).
  */
 export async function fetchGene(
   id: string,
   options?: FetchGeneOptions,
 ): Promise<GeneApiResponse | null> {
   if (!id) return null;
+
+  const ensemblId = await resolveGeneId(id);
+  if (!ensemblId) return null;
 
   const params = new URLSearchParams();
 
@@ -115,7 +215,7 @@ export async function fetchGene(
     params.set("cursorAgreements", options.cursorAgreements);
 
   const queryString = params.toString();
-  const url = `${API_BASE}/graph/gene/${encodeURIComponent(id)}${queryString ? `?${queryString}` : ""}`;
+  const url = `${API_BASE}/graph/gene/${encodeURIComponent(ensemblId)}${queryString ? `?${queryString}` : ""}`;
 
   const response = await fetchOrNull<GeneApiResponse>(url);
   return response ?? null;

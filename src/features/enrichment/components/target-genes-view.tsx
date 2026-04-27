@@ -268,7 +268,10 @@ function getPresentSources(row: TargetGeneEvidence): Set<string> {
   return present;
 }
 
-const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
+function buildColumns(
+  geneIdMap: Record<string, string>,
+): ColumnDef<TargetGeneEvidence, unknown>[] {
+  return [
   {
     id: "gene_symbol",
     accessorKey: "gene_symbol",
@@ -281,10 +284,14 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
     cell: ({ getValue }) => {
       const gene = getValue() as string;
       const isReadthrough = /^[A-Z0-9]+-[A-Z0-9]+$/.test(gene);
+      const ensemblId = geneIdMap[gene];
+      const href = ensemblId
+        ? `/hg38/gene/${ensemblId}/gene-level-annotation/llm-summary`
+        : `/hg38/gene/${encodeURIComponent(gene)}`;
       return (
         <div className="flex items-center gap-1.5">
           <Link
-            href={`/hg38/gene/${encodeURIComponent(gene)}`}
+            href={href}
             className="text-sm font-medium text-primary hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
@@ -626,7 +633,8 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
       );
     },
   },
-];
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Main
@@ -635,15 +643,23 @@ const columns: ColumnDef<TargetGeneEvidence, unknown>[] = [
 interface TargetGenesViewProps {
   data: TargetGeneEvidence[];
   variantVcf: string;
+  /** Map from gene_symbol to canonical Ensembl gene ID. */
+  geneIdMap?: Record<string, string>;
 }
 
-export function TargetGenesView({ data, variantVcf }: TargetGenesViewProps) {
+export function TargetGenesView({
+  data,
+  variantVcf,
+  geneIdMap,
+}: TargetGenesViewProps) {
   if (data.length === 0) return null;
 
   // Sort by total evidence count (including perturbation sources) descending
   const sorted = [...data].sort(
     (a, b) => getPresentSources(b).size - getPresentSources(a).size,
   );
+
+  const columns = buildColumns(geneIdMap ?? {});
 
   return (
     <DataSurface
