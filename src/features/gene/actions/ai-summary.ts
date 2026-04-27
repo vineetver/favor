@@ -13,20 +13,8 @@ import { fetchGene } from "@features/gene/api";
 import { buildGeneContext } from "@features/gene/utils/build-gene-context";
 import { buildGenePrompt } from "@features/gene/utils/build-gene-prompt";
 import { fetchCrisprByTissueGroup } from "@features/perturbation/api";
-import { cookies } from "next/headers";
+import { resolveAuthFromCookieStore } from "@infra/auth/server";
 import { API_BASE } from "@/config/api";
-
-async function getAuthCookie(): Promise<string> {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.toString();
-  if (!cookie) throw new Error("Unauthorized");
-
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: { Cookie: cookie },
-  });
-  if (!res.ok) throw new Error("Unauthorized");
-  return cookie;
-}
 
 export interface AITextData {
   content: string | null;
@@ -55,20 +43,22 @@ export async function getGeneSummary(
     content_type: "summary",
   });
 
-  const cookieStore = await cookies();
+  const auth = await resolveAuthFromCookieStore();
+  if (!auth) return { data: null };
+
   const response = await fetch(`${API_BASE}/ai-text?${searchParams}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Cookie: cookieStore.toString(),
+      ...auth.headers,
     },
     cache: "no-store",
   });
 
   if (!response.ok) {
-    if (response.status === 404 || response.status === 401) {
-      return { data: null };
-    }
+    if (response.status === 404) return { data: null };
+    // 401 must NOT be downgraded to "no cache" — that causes the hook to
+    // trigger a spurious generation when an entry already exists.
     throw new Error(`Failed to fetch AI text: ${response.status}`);
   }
 
@@ -91,7 +81,8 @@ export async function generateGeneSummary(params: {
     throw new Error("Invalid geneId");
   }
 
-  const cookie = await getAuthCookie();
+  const auth = await resolveAuthFromCookieStore();
+  if (!auth) throw new Error("Unauthorized");
 
   const geneResponse = await fetchGene(params.geneId).catch(() => null);
   const gene = geneResponse?.data;
@@ -145,7 +136,7 @@ export async function generateGeneSummary(params: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Cookie: cookie,
+      ...auth.headers,
     },
     body: JSON.stringify({
       entity_type: "gene",
