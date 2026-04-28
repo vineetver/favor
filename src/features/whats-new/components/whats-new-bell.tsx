@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@infra/utils";
+import { Button } from "@shared/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -73,21 +74,21 @@ export function WhatsNewBell() {
       }}
     >
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="icon-lg"
           aria-label={
             unreadCount > 0
               ? `What's new — ${unreadCount} unread`
               : "What's new"
           }
           className={cn(
-            "relative inline-flex h-9 w-9 items-center justify-center rounded-full",
-            "text-muted-foreground transition-colors duration-200",
-            "hover:bg-muted/60 hover:text-foreground",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            "relative rounded-full",
+            "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground",
+            "shadow-none",
           )}
         >
-          <Bell className="h-4 w-4" />
+          <Bell className="h-5 w-5" />
           {badge && (
             <span
               className={cn(
@@ -102,7 +103,7 @@ export function WhatsNewBell() {
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         align="end"

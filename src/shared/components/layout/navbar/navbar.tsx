@@ -58,10 +58,10 @@ function UserAvatar({
   picture?: string;
   size?: "sm" | "md";
 }) {
-  // Small avatars (24px) keep the utility cluster quiet — saturated
-  // generated avatars stop competing with the primary CTA.
-  const dims = size === "md" ? "h-9 w-9" : "h-6 w-6";
-  const text = size === "md" ? "text-sm" : "text-[10px]";
+  // Trigger avatars sit inside a 40px hit-area; 28px keeps breathing
+  // room around the initials so the cluster doesn't feel cramped.
+  const dims = size === "md" ? "h-9 w-9" : "h-7 w-7";
+  const text = size === "md" ? "text-sm" : "text-xs";
 
   if (picture) {
     return (
@@ -197,30 +197,34 @@ export function Navbar() {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex-1 flex justify-end items-center gap-3 z-10">
-              {/* Utility cluster: bell + avatar grouped tight, ghost
-                  treatment. Spacing — not a divider — separates the
-                  cluster from the primary CTA. */}
-              <div className="hidden md:flex items-center gap-0.5">
+            <div className="flex-1 flex justify-end items-center gap-2 z-10">
+              {/* Utility cluster (bell + avatar) at h-10. The labeled
+                  AI Agent pill below shares the same h-10 so the row
+                  reads at one consistent height. */}
+              <div className="hidden md:flex items-center gap-1">
                 <WhatsNewBell />
 
                 {!isLoading &&
                   (isAuthenticated && user ? (
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="Account menu"
+                        <Button
+                          variant="outline"
+                          aria-label={`Signed in as ${user.name || user.email}`}
                           className={cn(
-                            "flex items-center justify-center",
-                            "h-9 w-9 rounded-full",
-                            "transition-colors duration-200",
-                            "hover:bg-muted/60",
-                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                            "h-10 pl-1 pr-3 rounded-full gap-2",
+                            "bg-muted/50 hover:bg-muted",
+                            "shadow-none",
                           )}
                         >
                           <UserAvatar name={user.name} picture={user.picture} />
-                        </button>
+                          <span className="text-sm font-medium text-foreground max-w-[120px] truncate">
+                            {user.name && user.name !== user.email
+                              ? user.name.split(" ")[0]
+                              : (user.email?.split("@")[0] ?? "Account")}
+                          </span>
+                          <ChevronDown className="w-3.5 h-3.5 opacity-50 -ml-0.5" />
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
@@ -285,31 +289,30 @@ export function Navbar() {
                   ) : (
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => login()}
-                      className="rounded-full px-4 text-sm font-medium"
+                      className={cn(
+                        "h-10 rounded-full px-4 gap-1.5",
+                        "bg-muted/50 hover:bg-muted shadow-none",
+                      )}
                     >
-                      <User className="w-4 h-4 mr-1.5" />
+                      <User className="w-4 h-4" />
                       Sign in
                     </Button>
                   ))}
               </div>
 
-              <Link
-                href="/agent"
-                className={cn(
-                  "hidden md:flex items-center gap-1.5",
-                  "h-9 px-4 rounded-full",
-                  "bg-primary text-primary-foreground",
-                  "shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25",
-                  "hover:brightness-110 active:scale-[0.98]",
-                  "transition-all duration-200",
-                  "group",
-                )}
+              {/* Primary CTA — same h-10 as the cluster so the right
+                  side reads as one row. Brand color anchors the eye;
+                  no drop shadow needed. */}
+              <Button
+                asChild
+                className="hidden md:inline-flex h-10 rounded-full px-4 gap-1.5"
               >
-                <Sparkles className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
-                <span className="text-sm font-semibold">AI Agent</span>
-              </Link>
+                <Link href="/agent" className="group">
+                  <Sparkles className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" />
+                  <span className="text-sm font-semibold">AI Agent</span>
+                </Link>
+              </Button>
 
               {/* Mobile Toggle */}
               <Button
