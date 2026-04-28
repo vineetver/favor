@@ -76,10 +76,15 @@ const credibleSetsColumns = [
               ★
             </span>
           )}
-          {display && (
-            <span className="text-foreground truncate" title={t ?? undefined}>
+          {display && t && (
+            <ExternalLink
+              href={`https://www.ebi.ac.uk/gwas/search?query=${encodeURIComponent(t)}`}
+              iconSize="sm"
+              className="text-foreground truncate min-w-0"
+              title={t}
+            >
               {display}
-            </span>
+            </ExternalLink>
           )}
         </div>
       );

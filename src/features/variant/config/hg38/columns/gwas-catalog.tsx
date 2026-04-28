@@ -1,5 +1,6 @@
 import type { GwasAssociationRow } from "@features/variant/types/gwas";
 import { createColumns, tooltip } from "@infra/table/column-builder";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<GwasAssociationRow>();
@@ -98,7 +99,38 @@ export const gwasCatalogColumns = [
     cell: ({ row }) => {
       const gene = row.original.mappedGene;
       if (!gene) return "-";
-      return <span className="font-medium text-primary">{gene}</span>;
+      // GWAS Catalog mapped_gene can be a comma- or " - "-separated list
+      // (intergenic case). Link each token individually when split.
+      const tokens = gene.split(/\s*[,;]\s*|\s+-\s+/).filter(Boolean);
+      if (tokens.length === 1) {
+        return (
+          <EntityLink
+            type="genes"
+            id={tokens[0]}
+            className="font-medium text-primary hover:underline"
+          >
+            {tokens[0]}
+          </EntityLink>
+        );
+      }
+      return (
+        <span className="font-medium">
+          {tokens.map((g, i) => (
+            <span key={g}>
+              <EntityLink
+                type="genes"
+                id={g}
+                className="text-primary hover:underline"
+              >
+                {g}
+              </EntityLink>
+              {i < tokens.length - 1 && (
+                <span className="text-muted-foreground">, </span>
+              )}
+            </span>
+          ))}
+        </span>
+      );
     },
   }),
 
@@ -206,12 +238,12 @@ export const gwasCatalogColumns = [
     cell: ({ row }) => {
       const val = row.original.trait || row.original.diseaseTrait;
       if (!val) return "-";
-      return val.length > 48 ? (
-        <span title={val} className="cursor-help">
-          {val.slice(0, 48)}…
-        </span>
-      ) : (
-        <span>{val}</span>
+      const display = val.length > 48 ? `${val.slice(0, 48)}…` : val;
+      const href = `https://www.ebi.ac.uk/gwas/search?query=${encodeURIComponent(val)}`;
+      return (
+        <ExternalLink href={href} className="text-sm" title={val}>
+          {display}
+        </ExternalLink>
       );
     },
   }),
@@ -227,9 +259,22 @@ export const gwasCatalogColumns = [
     cell: ({ row }) => {
       const val = row.original.firstAuthor;
       if (!val) return "-";
+      const accession = row.original.studyAccession;
+      const display = formatAuthor(val);
+      if (accession) {
+        return (
+          <ExternalLink
+            href={`https://www.ebi.ac.uk/gwas/studies/${encodeURIComponent(accession)}`}
+            className="text-sm"
+            title={`${val} (${accession})`}
+          >
+            {display}
+          </ExternalLink>
+        );
+      }
       return (
         <span className="text-sm text-muted-foreground" title={val}>
-          {formatAuthor(val)}
+          {display}
         </span>
       );
     },

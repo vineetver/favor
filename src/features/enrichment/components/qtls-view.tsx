@@ -14,6 +14,7 @@ import type {
   ColumnMeta,
   DimensionConfig,
 } from "@shared/components/ui/data-surface/types";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import {
   Tooltip,
   TooltipContent,
@@ -83,7 +84,14 @@ const columns: ColumnDef<QtlRow, unknown>[] = [
       const gene = getValue() as string | null;
       if (!gene) return <Dash />;
       return (
-        <span className="text-sm font-medium text-foreground">{gene}</span>
+        <EntityLink
+          type="genes"
+          id={gene}
+          stopPropagation
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          {gene}
+        </EntityLink>
       );
     },
   },

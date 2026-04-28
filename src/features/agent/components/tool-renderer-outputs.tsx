@@ -1,5 +1,7 @@
 import { MessageResponse } from "@shared/components/ai-elements/message";
 import { Badge } from "@shared/components/ui/badge";
+import { EntityLink } from "@shared/components/ui/entity-link";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   Table,
   TableBody,
@@ -252,7 +254,18 @@ function GwasRenderer({
           <TableBody>
             {associations.map((a, i) => (
               <TableRow key={`${a.trait}-${i}`}>
-                <TableCell className="font-medium">{a.trait}</TableCell>
+                <TableCell className="font-medium">
+                  {a.trait ? (
+                    <ExternalLink
+                      href={`https://www.ebi.ac.uk/gwas/search?query=${encodeURIComponent(a.trait)}`}
+                      iconSize="sm"
+                    >
+                      {a.trait}
+                    </ExternalLink>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">
                   {fmt(a.pValueMlog)}
                 </TableCell>
@@ -262,8 +275,14 @@ function GwasRenderer({
                   </TableCell>
                 )}
                 {a.studyAccession && (
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {a.studyAccession}
+                  <TableCell className="font-mono text-xs">
+                    <ExternalLink
+                      href={`https://www.ebi.ac.uk/gwas/studies/${encodeURIComponent(a.studyAccession)}`}
+                      iconSize="sm"
+                      className="text-muted-foreground"
+                    >
+                      {a.studyAccession}
+                    </ExternalLink>
                   </TableCell>
                 )}
               </TableRow>
@@ -283,9 +302,13 @@ function GeneStatsRenderer({ data }: { data: CompressedGeneStats }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-semibold text-sm text-foreground">
+        <EntityLink
+          type="genes"
+          id={data.gene}
+          className="font-semibold text-sm text-primary hover:underline"
+        >
           {data.gene}
-        </span>
+        </EntityLink>
         <Badge variant="secondary" className="text-[10px]">
           {data.totalVariants.toLocaleString()} variants
         </Badge>

@@ -8,6 +8,7 @@ import type {
 } from "@features/enrichment/api/region";
 import { useAseQuery } from "@features/enrichment/hooks/use-ase-query";
 import { DataSurface } from "@shared/components/ui/data-surface";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useClientSearchParams, useServerTable } from "@shared/hooks";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -297,12 +298,24 @@ function AseDetailView({
           cell: ({ getValue }: { getValue: () => unknown }) => {
             const id = getValue() as string;
             return (
-              <button
-                className="text-xs font-mono text-primary hover:underline cursor-pointer"
-                onClick={() => openCcreSheet(id)}
-              >
-                {id}
-              </button>
+              <span className="inline-flex items-center gap-1.5">
+                <EntityLink
+                  type="ccre"
+                  id={id}
+                  stopPropagation
+                  className="text-xs font-mono text-primary hover:underline"
+                >
+                  {id}
+                </EntityLink>
+                <button
+                  type="button"
+                  className="text-[10px] text-muted-foreground hover:text-primary cursor-pointer"
+                  onClick={() => openCcreSheet(id)}
+                  title="Quick view"
+                >
+                  ⓘ
+                </button>
+              </span>
             );
           },
         };

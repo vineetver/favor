@@ -11,6 +11,7 @@ import {
   parseDatabaseEntries,
   parseDiseaseNames,
 } from "@infra/utils/parsing-utils";
+import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Variant>();
 
@@ -244,6 +245,20 @@ function formatDiseaseName(name: string): string {
   return formatted;
 }
 
+function DiseaseEntry({ label }: { label: string }) {
+  // CLNDN names alone cannot be reliably mapped to a single internal disease
+  // ID (CLNDISDB is a flat list, not parallel-indexed to CLNDN). Fall back to
+  // a MedGen search by name so users still get an external lookup.
+  return (
+    <ExternalLink
+      href={`https://www.ncbi.nlm.nih.gov/medgen/?term=${encodeURIComponent(label)}`}
+      iconSize="sm"
+    >
+      {label}
+    </ExternalLink>
+  );
+}
+
 function DiseaseList({
   value,
 }: {
@@ -259,13 +274,15 @@ function DiseaseList({
   const formattedDiseases = diseases.map((d) => formatDiseaseName(d));
 
   if (formattedDiseases.length === 1)
-    return <span>{formattedDiseases[0]}</span>;
+    return <DiseaseEntry label={formattedDiseases[0]} />;
 
   return (
     <div className="space-y-0.5">
       {formattedDiseases.map((disease, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: disease names may repeat, order is stable from parent data
-        <div key={`${disease}-${i}`}>{disease}</div>
+        <div key={`${disease}-${i}`}>
+          <DiseaseEntry label={disease} />
+        </div>
       ))}
     </div>
   );

@@ -10,6 +10,7 @@ import { useEnhancerGenesQuery } from "@features/enrichment/hooks/use-enhancer-g
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import {
   Tooltip,
   TooltipContent,
@@ -212,15 +213,27 @@ const geneCol: ColumnDef<EnhancerGeneRow, unknown> = {
     const gene = row.original.gene_symbol;
     if (gene)
       return (
-        <span className="text-sm font-medium text-foreground">{gene}</span>
+        <EntityLink
+          type="genes"
+          id={gene}
+          stopPropagation
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          {gene}
+        </EntityLink>
       );
     // EpiMap fallback: gene_id from detail
     const geneId = row.original.detail?.gene_id as string | undefined;
     if (geneId)
       return (
-        <span className="text-xs font-mono text-muted-foreground">
+        <EntityLink
+          type="genes"
+          id={geneId}
+          stopPropagation
+          className="text-xs font-mono text-primary hover:underline"
+        >
           {geneId}
-        </span>
+        </EntityLink>
       );
     return <span className="text-muted-foreground/40">&mdash;</span>;
   },

@@ -7,6 +7,7 @@ import type {
 import { cn } from "@infra/utils";
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
+import { ExternalLink } from "@shared/components/ui/external-link";
 import { Label } from "@shared/components/ui/label";
 import { Switch } from "@shared/components/ui/switch";
 import { useMemo, useState } from "react";
@@ -128,9 +129,13 @@ function EnhancerCard({ row }: { row: ValidatedEnhancerRow }) {
         <div className="space-y-1.5 min-w-0">
           {/* ID + coordinates */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-mono font-medium text-foreground">
+            <ExternalLink
+              href={`https://enhancer.lbl.gov/cgi-bin/imagedb3.pl?form=presentation&show=1&experiment_id=${encodeURIComponent(row.element_id.replace(/^hs/i, ""))}&organism_id=1`}
+              iconSize="sm"
+              className="text-sm font-mono font-medium"
+            >
               {row.element_id}
-            </span>
+            </ExternalLink>
             <span className="text-xs tabular-nums text-muted-foreground">
               {row.start.toLocaleString()}&ndash;{row.end.toLocaleString()}
             </span>

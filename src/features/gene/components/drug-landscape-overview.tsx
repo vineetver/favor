@@ -9,6 +9,7 @@ import {
 } from "@shared/components/ui/card";
 import { ScopeBar } from "@shared/components/ui/data-surface/scope-bar";
 import type { DimensionConfig } from "@shared/components/ui/data-surface/types";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import { NoDataState } from "@shared/components/ui/error-states";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import { Input } from "@shared/components/ui/input";
@@ -30,6 +31,7 @@ interface DrugLandscapeOverviewProps {
 
 type DrugEdge = {
   id: string;
+  drugId: string;
   drugName: string;
   drugDescription: string | null;
   actionType: string | null;
@@ -145,6 +147,7 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
 
       results.push({
         id: `acts_on_${id}`,
+        drugId: String(id),
         drugName: String(
           props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown",
         ),
@@ -205,6 +208,7 @@ function extractDrugEdges(relations: unknown, edges?: unknown): DrugEdge[] {
 
       results.push({
         id: `disposition_${id}`,
+        drugId: String(id),
         drugName: String(
           props.drug_name ?? neighbor?.label ?? neighbor?.name ?? "Unknown",
         ),
@@ -561,8 +565,20 @@ export function DrugLandscapeOverview({
                   <div className="space-y-5">
                     {/* ─ Title ─ */}
                     <div className="space-y-2">
-                      <h3 className="text-[15px] font-semibold text-foreground leading-snug">
-                        {formatDrugName(selected.drugName)}
+                      <h3 className="text-[15px] font-semibold leading-snug">
+                        {selected.drugId?.includes("CHEMBL") ? (
+                          <EntityLink
+                            type="drugs"
+                            id={selected.drugId}
+                            className="text-primary hover:underline"
+                          >
+                            {formatDrugName(selected.drugName)}
+                          </EntityLink>
+                        ) : (
+                          <span className="text-foreground">
+                            {formatDrugName(selected.drugName)}
+                          </span>
+                        )}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         {selected.actionType && (

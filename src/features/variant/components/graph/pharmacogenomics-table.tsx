@@ -7,7 +7,7 @@ import {
   tooltip,
 } from "@infra/table/column-builder";
 import { DataSurface } from "@shared/components/ui/data-surface";
-import Link from "next/link";
+import { EntityLink } from "@shared/components/ui/entity-link";
 
 // =============================================================================
 // Row type
@@ -136,16 +136,18 @@ const columns = [
       citation: "PharmGKB",
     }),
     cell: ({ row }) => {
-      const { drugName, drugId, type } = row.original;
+      const { drugName, drugId } = row.original;
       if (!drugName || drugName === "Unknown") return "-";
-      if (type === "drug_response" && drugId.includes("CHEMBL")) {
+      if (drugId?.includes("CHEMBL")) {
         return (
-          <Link
-            href={`/drug/${drugId}`}
+          <EntityLink
+            type="drugs"
+            id={drugId}
+            stopPropagation
             className="text-primary hover:underline font-medium"
           >
             {drugName}
-          </Link>
+          </EntityLink>
         );
       }
       return <span className="font-medium">{drugName}</span>;
@@ -228,7 +230,16 @@ const columns = [
     cell: ({ row }) => {
       const val = row.original.geneSymbol;
       if (!val) return "-";
-      return <span className="font-medium">{val}</span>;
+      return (
+        <EntityLink
+          type="genes"
+          id={val}
+          stopPropagation
+          className="font-medium text-primary hover:underline"
+        >
+          {val}
+        </EntityLink>
+      );
     },
   }),
 

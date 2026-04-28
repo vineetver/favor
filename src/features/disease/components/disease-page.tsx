@@ -3,6 +3,7 @@
 import { cn } from "@infra/utils";
 import { Badge } from "@shared/components/ui/badge";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import {
   Tabs,
   TabsContent,
@@ -761,9 +762,20 @@ const variantColumns: ColumnDef<VariantRow>[] = [
     accessorKey: "geneSymbol",
     header: "Gene",
     enableSorting: true,
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.geneSymbol || "—"}</span>
-    ),
+    cell: ({ row }) => {
+      const gene = row.original.geneSymbol;
+      if (!gene) return <span className="font-medium">—</span>;
+      return (
+        <EntityLink
+          type="genes"
+          id={gene}
+          stopPropagation
+          className="font-medium text-primary hover:underline"
+        >
+          {gene}
+        </EntityLink>
+      );
+    },
   },
   {
     id: "pValueMlog",

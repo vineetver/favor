@@ -12,6 +12,7 @@ import {
   createColumns,
   tooltip,
 } from "@infra/table/column-builder";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import { ExternalLink } from "@shared/components/ui/external-link";
 import {
   Popover,
@@ -189,7 +190,14 @@ function GeneHancerCell({ value }: { value: GeneHancer | null | undefined }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs font-medium text-foreground">{top.gene}</span>
+      <EntityLink
+        type="genes"
+        id={top.gene}
+        stopPropagation
+        className="text-xs font-medium text-primary hover:underline"
+      >
+        {top.gene}
+      </EntityLink>
       <span className="text-[10px] text-muted-foreground">{top.score}</span>
       {rest > 0 && (
         <Popover>
@@ -216,9 +224,13 @@ function GeneHancerCell({ value }: { value: GeneHancer | null | undefined }) {
                   key={i}
                   className="flex items-center justify-between px-3 py-1"
                 >
-                  <span className="text-xs font-medium text-foreground">
+                  <EntityLink
+                    type="genes"
+                    id={e.gene}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
                     {e.gene}
-                  </span>
+                  </EntityLink>
                   <span className="text-[10px] text-muted-foreground tabular-nums">
                     {e.score}
                   </span>
@@ -266,13 +278,30 @@ export const functionalClassColumns = [
         "Identify whether variants cause protein coding changes using Gencode genes definition systems, it will label the gene name of the variants has impact, if it is intergenic region, the nearby gene name will be labeled in the annotation.",
       citation: "Frankish et al., 2018; Harrow et al., 2012",
     }),
-    cell: ({ row }) => (
-      <div className="font-mono">
-        {(row.getValue("genecode_comprehensive_info") as Array<string | null>)
-          ?.filter(Boolean)
-          ?.join(", ") || "-"}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const genes = (
+        row.getValue("genecode_comprehensive_info") as Array<string | null>
+      )?.filter((g): g is string => Boolean(g));
+      if (!genes?.length) return <div className="font-mono">-</div>;
+      return (
+        <div className="font-mono">
+          {genes.map((g, i) => (
+            <span key={`${g}-${i}`}>
+              <EntityLink
+                type="genes"
+                id={g}
+                className="text-primary hover:underline"
+              >
+                {g}
+              </EntityLink>
+              {i < genes.length - 1 && (
+                <span className="text-muted-foreground">, </span>
+              )}
+            </span>
+          ))}
+        </div>
+      );
+    },
   }),
 
   col.accessor("genecode_comprehensive_category", {
@@ -362,9 +391,27 @@ export const functionalClassColumns = [
         "Predicted super-enhancer sites and targets in a range of human cell types.",
       citation: "Hnisz et al., 2013",
     }),
-    cell: cell.custom((val: Array<string | null> | null) => (
-      <div className="font-mono">{val?.filter(Boolean).join(", ") || "-"}</div>
-    )),
+    cell: cell.custom((val: Array<string | null> | null) => {
+      const ids = val?.filter((id): id is string => Boolean(id)) ?? [];
+      if (!ids.length) return <div className="font-mono">-</div>;
+      return (
+        <div className="font-mono">
+          {ids.map((id, i) => (
+            <span key={id}>
+              <ExternalLink
+                href={`https://asntech.org/dbsuper/super_enhancer.php?id=${encodeURIComponent(id)}`}
+                className="text-xs"
+              >
+                {id}
+              </ExternalLink>
+              {i < ids.length - 1 && (
+                <span className="text-muted-foreground">, </span>
+              )}
+            </span>
+          ))}
+        </div>
+      );
+    }),
   }),
 
   col.accessor("ucsc_info", {

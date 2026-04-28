@@ -10,6 +10,7 @@ import { cn } from "@infra/utils";
 import { Dash } from "@shared/components/ui/dash";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import { VariantCell } from "@shared/components/ui/variant-cell";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useClientSearchParams, useServerTable } from "@shared/hooks";
@@ -177,8 +178,15 @@ const columns: ColumnDef<ChromBpnetRow, unknown>[] = [
           ? ` (${dist >= 1000 ? `${(dist / 1000).toFixed(1)}kb` : `${dist}bp`})`
           : "";
       return (
-        <span className="text-xs text-foreground">
-          {gene}
+        <span className="text-xs">
+          <EntityLink
+            type="genes"
+            id={gene}
+            stopPropagation
+            className="text-primary hover:underline"
+          >
+            {gene}
+          </EntityLink>
           {distLabel}
         </span>
       );

@@ -13,6 +13,7 @@ import type {
   ColumnMeta,
   DimensionConfig,
 } from "@shared/components/ui/data-surface/types";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import {
   updateClientUrl,
@@ -174,12 +175,24 @@ function CcreLinksDetailView({
         cell: ({ getValue }) => {
           const id = getValue() as string;
           return (
-            <button
-              className="text-xs font-mono text-primary hover:underline cursor-pointer"
-              onClick={() => openCcreSheet(id)}
-            >
-              {id}
-            </button>
+            <span className="inline-flex items-center gap-1.5">
+              <EntityLink
+                type="ccre"
+                id={id}
+                stopPropagation
+                className="text-xs font-mono text-primary hover:underline"
+              >
+                {id}
+              </EntityLink>
+              <button
+                type="button"
+                className="text-[10px] text-muted-foreground hover:text-primary cursor-pointer"
+                onClick={() => openCcreSheet(id)}
+                title="Quick view"
+              >
+                ⓘ
+              </button>
+            </span>
           );
         },
       },

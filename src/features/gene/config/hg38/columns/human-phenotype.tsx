@@ -1,5 +1,7 @@
 import type { Gene } from "@features/gene/types";
 import { cell, createColumns, tooltip } from "@infra/table/column-builder";
+import { EntityLink } from "@shared/components/ui/entity-link";
+import { ExternalLink } from "@shared/components/ui/external-link";
 
 const col = createColumns<Gene>();
 
@@ -14,10 +16,21 @@ export const geneHumanPhenotypeColumns = [
     cell: cell.custom<Gene, string>((value) => (
       <ul className="flex flex-col gap-1">
         {value.split(";").map((item) => {
-          const clean = item.replace(/\[.*?\]/g, "");
+          const mim = item.match(/\[MIM:(\d+)\]/)?.[1];
+          const clean = item.replace(/\[.*?\]/g, "").trim();
           return (
             <li className="capitalize" key={item}>
-              {clean}
+              {mim ? (
+                <EntityLink
+                  type="diseases"
+                  id={`OMIM:${mim}`}
+                  className="text-primary hover:underline"
+                >
+                  {clean}
+                </EntityLink>
+              ) : (
+                clean
+              )}
             </li>
           );
         })}
@@ -124,12 +137,25 @@ export const geneHumanPhenotypeColumns = [
         {str
           .split(";")
           .filter(Boolean)
-          .map((item, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: orphanet items may repeat
-            <li className="capitalize" key={`${item}-${index}`}>
-              {item}
-            </li>
-          ))}
+          .map((item, index) => {
+            const orphaId = item.match(/\[ORPHA:?(\d+)\]/i)?.[1];
+            const clean = item.replace(/\[.*?\]/g, "").trim();
+            return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: orphanet items may repeat
+              <li className="capitalize" key={`${item}-${index}`}>
+                {orphaId ? (
+                  <ExternalLink
+                    href={`https://www.orpha.net/en/disease/detail/${orphaId}`}
+                    iconSize="sm"
+                  >
+                    {clean}
+                  </ExternalLink>
+                ) : (
+                  clean
+                )}
+              </li>
+            );
+          })}
       </ul>
     )),
   }),

@@ -10,6 +10,7 @@ import { useSignalsQuery } from "@features/enrichment/hooks/use-signals-query";
 import { cn } from "@infra/utils";
 import { DataSurface } from "@shared/components/ui/data-surface";
 import type { ColumnMeta } from "@shared/components/ui/data-surface/types";
+import { EntityLink } from "@shared/components/ui/entity-link";
 import type { ServerFilterConfig, ServerPaginationInfo } from "@shared/hooks";
 import { useClientSearchParams, useServerTable } from "@shared/hooks";
 import { formatTissueName } from "@shared/utils/tissue-format";
@@ -117,9 +118,14 @@ const signalColumns: ColumnDef<SignalRow, unknown>[] = [
     enableSorting: false,
     cell: ({ row }) => (
       <div>
-        <span className="font-mono text-xs text-foreground">
+        <EntityLink
+          type="ccre"
+          id={row.original.ccre_id}
+          stopPropagation
+          className="font-mono text-xs text-primary hover:underline"
+        >
           {row.original.ccre_id}
-        </span>
+        </EntityLink>
         <span className="block text-[10px] text-muted-foreground tabular-nums">
           {row.original.start.toLocaleString()}&ndash;
           {row.original.end.toLocaleString()}
