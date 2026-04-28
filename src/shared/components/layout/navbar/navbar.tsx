@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsNewBell } from "@features/whats-new";
 import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -57,15 +58,17 @@ function UserAvatar({
   picture?: string;
   size?: "sm" | "md";
 }) {
-  const dims = size === "md" ? "h-9 w-9" : "h-8 w-8";
-  const text = size === "md" ? "text-sm" : "text-xs";
+  // Small avatars (24px) keep the utility cluster quiet — saturated
+  // generated avatars stop competing with the primary CTA.
+  const dims = size === "md" ? "h-9 w-9" : "h-6 w-6";
+  const text = size === "md" ? "text-sm" : "text-[10px]";
 
   if (picture) {
     return (
       <img
         src={picture}
         alt={name || "User"}
-        className={cn(dims, "rounded-full object-cover ring-2 ring-border/40")}
+        className={cn(dims, "rounded-full object-cover ring-1 ring-border/60")}
       />
     );
   }
@@ -85,7 +88,7 @@ function UserAvatar({
         dims,
         "rounded-full flex items-center justify-center",
         "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground",
-        "ring-2 ring-primary/20",
+        "ring-1 ring-border/60",
         text,
         "font-semibold",
       )}
@@ -195,19 +198,25 @@ export function Navbar() {
 
             {/* Right: Actions */}
             <div className="flex-1 flex justify-end items-center gap-3 z-10">
-              {/* Auth: Sign in / User menu */}
-              {!isLoading && (
-                <div className="hidden md:flex items-center">
-                  {isAuthenticated && user ? (
+              {/* Utility cluster: bell + avatar grouped tight, ghost
+                  treatment. Spacing — not a divider — separates the
+                  cluster from the primary CTA. */}
+              <div className="hidden md:flex items-center gap-0.5">
+                <WhatsNewBell />
+
+                {!isLoading &&
+                  (isAuthenticated && user ? (
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
+                          aria-label="Account menu"
                           className={cn(
-                            "flex items-center gap-2 px-2 py-1 rounded-full",
-                            "transition-all duration-200",
+                            "flex items-center justify-center",
+                            "h-9 w-9 rounded-full",
+                            "transition-colors duration-200",
                             "hover:bg-muted/60",
-                            "focus:outline-none",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                           )}
                         >
                           <UserAvatar name={user.name} picture={user.picture} />
@@ -283,28 +292,23 @@ export function Navbar() {
                       <User className="w-4 h-4 mr-1.5" />
                       Sign in
                     </Button>
-                  )}
-                </div>
-              )}
-
-              <div className="hidden md:flex h-5 w-px bg-border" />
+                  ))}
+              </div>
 
               <Link
                 href="/agent"
                 className={cn(
-                  "hidden md:flex items-center gap-2",
-                  "px-5 py-2 rounded-full",
+                  "hidden md:flex items-center gap-1.5",
+                  "h-9 px-4 rounded-full",
                   "bg-primary text-primary-foreground",
-                  "shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30",
-                  "hover:brightness-110 active:scale-[0.97]",
-                  "transition-all duration-300",
+                  "shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25",
+                  "hover:brightness-110 active:scale-[0.98]",
+                  "transition-all duration-200",
                   "group",
                 )}
               >
                 <Sparkles className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
-                <span className="text-sm font-semibold tracking-wide">
-                  AI Agent
-                </span>
+                <span className="text-sm font-semibold">AI Agent</span>
               </Link>
 
               {/* Mobile Toggle */}

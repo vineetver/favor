@@ -24,12 +24,24 @@ export interface ChangeEntry {
   text: string;
   /** Optional source / component label rendered as a leading tag. */
   source?: string;
+  /**
+   * Optional slug that drives <NewDot slug={...} /> in sub-nav. Set this
+   * when the change ships a feature behind a deep nav item (sidebar tab,
+   * sub-page) the user might miss. Leave unset for backend-only or
+   * already-prominent changes.
+   */
+  navSlug?: string;
 }
 
 export type ReleaseTag = "major" | "minor" | "patch";
 
 export interface Release {
-  /** Human-facing version label, e.g. "2026.1". */
+  /**
+   * Date-based version label, "YYYY.MM.DD" (CalVer). Append ".1", ".2"
+   * etc. only as a tiebreaker when shipping multiple releases on the
+   * same day. Used as the stable id for the page anchor (`#v{version}`)
+   * and the What's New seen-set, so it must never change after release.
+   */
   version: string;
   /** ISO date (YYYY-MM-DD). */
   date: string;
@@ -65,12 +77,12 @@ export const AREA_ORDER: ChangeArea[] = [
 
 export const RELEASES: Release[] = [
   {
-    version: "2026.2",
+    version: "2026.04.09",
     date: "2026-04-09",
     title: "GPN-MSA PHRED fix",
     tag: "patch",
     summary:
-      "gpn_msa_phred in v2026.1 was wrong. Recomputed across the full genome. Raw gpn_msa_score is unchanged.",
+      "gpn_msa_phred in v2026.02.15 was wrong. Recomputed across the full genome. Raw gpn_msa_score is unchanged.",
     changes: [
       {
         kind: "fixed",
@@ -81,7 +93,7 @@ export const RELEASES: Release[] = [
     ],
   },
   {
-    version: "2026.1",
+    version: "2026.02.15",
     date: "2026-02-15",
     title: "Missense, splicing, and non-coding pathogenicity expansion",
     tag: "major",
