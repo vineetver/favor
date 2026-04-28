@@ -19,7 +19,7 @@ export default async function DrugPageRoute({ params }: DrugPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-page mx-auto px-6 lg:px-12">
+      <div className="max-w-page mx-auto px-6 lg:px-12 pb-12">
         <DrugHeader drug={response.data} />
         <DrugPage
           drug={response.data}
