@@ -324,12 +324,22 @@ export function ApiKeysSection() {
     id: string;
     label: string;
   } | null>(null);
+  const [usageCopied, setUsageCopied] = useState(false);
 
   const { data: keys, isLoading } = useQuery({
     queryKey: ["api-keys"],
     queryFn: listApiKeys,
     enabled: !!user,
   });
+
+  const usageSnippet = `curl --request GET \\\n  --url ${process.env.NEXT_PUBLIC_API_URL || "/api/v1"}/variants/rs7412`;
+
+  const handleCopyUsage = useCallback(() => {
+    navigator.clipboard.writeText(usageSnippet);
+    setUsageCopied(true);
+    toast.success("Copied to clipboard");
+    setTimeout(() => setUsageCopied(false), 2000);
+  }, [usageSnippet]);
 
   return (
     <div className="space-y-6">
@@ -469,10 +479,25 @@ export function ApiKeysSection() {
       {keys && keys.length > 0 && (
         <div className="rounded-lg border border-border bg-muted/30 p-4">
           <p className="text-xs font-medium text-foreground mb-2">Usage</p>
-          <code className="block text-xs font-mono text-muted-foreground bg-muted rounded-md p-3 overflow-x-auto">
-            curl -H &quot;Authorization: Bearer favor_sk_...&quot;{" "}
-            {process.env.NEXT_PUBLIC_API_URL || "/api/v1"}/agent/sessions
-          </code>
+          <div className="relative group">
+            <pre className="text-xs font-mono text-muted-foreground bg-muted rounded-md p-3 pr-12 overflow-x-auto whitespace-pre">
+              <code>{usageSnippet}</code>
+            </pre>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleCopyUsage}
+              aria-label={usageCopied ? "Copied" : "Copy curl command"}
+              className="absolute top-1.5 right-1.5 h-7 w-7 text-muted-foreground hover:text-foreground"
+            >
+              {usageCopied ? (
+                <Check className="w-3.5 h-3.5" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          </div>
         </div>
       )}
 
