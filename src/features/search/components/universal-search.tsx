@@ -910,7 +910,13 @@ export function UniversalSearch() {
 
       {/* Helper Text */}
       <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-muted-foreground uppercase tracking-widest opacity-80 flex-wrap">
-        {["BRCA1", "rs7412", "Alzheimer disease", "Metformin"].map((search) => (
+        {[
+          "BRCA1",
+          "rs7412",
+          "Alzheimer disease",
+          "Metformin",
+          "19-44808820-44908922",
+        ].map((search) => (
           <button
             type="button"
             key={search}
