@@ -2,6 +2,13 @@
 
 // API
 export {
+  clearSearchHistory,
+  deleteSearchHistory,
+  listSearchHistory,
+  pinSearchHistory,
+  recordSearchHistory,
+} from "./api/history-api";
+export {
   fetchPivotExpansion,
   fetchSearch,
   fetchTypeahead,
@@ -9,6 +16,11 @@ export {
 export { UniversalSearch } from "./components";
 // Context
 export { SearchProvider, useSearch } from "./context/search-context";
+// Hooks
+export {
+  fireRecordSearchHistory,
+  useSearchHistory,
+} from "./hooks/use-search-history";
 // Types
 export type {
   EntityLinks,
@@ -23,6 +35,13 @@ export type {
   TypeaheadResponse,
   TypeaheadSuggestion,
 } from "./types/api";
+export type {
+  HistoryItem,
+  HistoryKind,
+  ListHistoryParams,
+  ListHistoryResponse,
+  RecordHistoryBody,
+} from "./types/history";
 export type {
   ParsedQuery,
   ParsedVariantQuery,

@@ -18,9 +18,12 @@ import {
   useState,
   useTransition,
 } from "react";
+import { useSearch } from "../context/search-context";
 import { usePivotExpansion } from "../hooks/use-pivot-expansion";
+import { useSearchHistory } from "../hooks/use-search-history";
 import { useTypeahead } from "../hooks/use-typeahead";
 import type { EntityType, TypeaheadSuggestion } from "../types/api";
+import type { HistoryItem } from "../types/history";
 import {
   isRoutableQuery,
   navigateToQuery,
@@ -32,6 +35,7 @@ import {
   getEntityUrl,
   hasEntityPage,
 } from "../utils/entity-routes";
+import { SearchHistoryPanel } from "./search-history-panel";
 
 type GenomeBuild = "hg38" | "hg19";
 
@@ -160,6 +164,14 @@ const FALLBACK_ENTITY_CONFIG = {
   borderColor: "border-border",
 };
 
+const EXAMPLE_QUERIES = [
+  "BRCA1",
+  "rs7412",
+  "Alzheimer disease",
+  "Metformin",
+  "19-44808820-44908922",
+] as const;
+
 function getEntityConfig(type: EntityType) {
   return ENTITY_CONFIG[type] ?? FALLBACK_ENTITY_CONFIG;
 }
@@ -239,6 +251,8 @@ function AnchorChip({
 
 export function UniversalSearch() {
   const router = useRouter();
+  const { isOpen: ctxIsOpen, initialQuery, closeSearch } = useSearch();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [genome, setGenome] = useState<GenomeBuild>("hg38");
   const [searchState, setSearchState] = useState<SearchState>({
     mode: "idle",
@@ -285,6 +299,36 @@ export function UniversalSearch() {
     limit: 5,
     expandedLimit: 50,
   });
+
+  // Search history — drives the empty-state Recent panel and records commits
+  const { record: recordHistory } = useSearchHistory({
+    kind: "search",
+    limit: 10,
+  });
+
+  // ⌘K (and any other openSearch caller) → focus this input + show history.
+  // The provider holds open/closed state; we just react to it locally.
+  useEffect(() => {
+    if (ctxIsOpen) {
+      if (initialQuery) {
+        setSearchState({ mode: "typing", query: initialQuery, anchors: [] });
+      }
+      setIsDropdownOpen(true);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    } else {
+      setIsDropdownOpen(false);
+    }
+  }, [ctxIsOpen, initialQuery]);
+
+  // Reset the provider flag if this component unmounts while it was open
+  // (e.g. user pressed ⌘K once on / then navigated away). Otherwise the
+  // flag stays true and the next mount of UniversalSearch would auto-open.
+  useEffect(
+    () => () => {
+      closeSearch();
+    },
+    [closeSearch],
+  );
 
   // Is the current query a direct-routable region like "1-10001-20002"?
   const parsedQuery = parseQuery(query);
@@ -451,6 +495,14 @@ export function UniversalSearch() {
           router,
         );
         if (success) {
+          recordHistory({
+            kind: "search",
+            query: lastAnchor.display_name,
+            entityType: lastAnchor.entity_type,
+            entityId: lastAnchor.id,
+            entityLabel: lastAnchor.display_name,
+            genome,
+          });
           clearTypeahead();
           clearPivot();
           setSearchState({ mode: "idle", query: "", anchors: [] });
@@ -463,12 +515,20 @@ export function UniversalSearch() {
     // Standard URL navigation using anchor.id (not display_name) - always use getEntityUrl for consistent routing
     const url = getEntityUrl(lastAnchor.entity_type, lastAnchor.id, { genome });
     router.push(url);
+    recordHistory({
+      kind: "search",
+      query: lastAnchor.display_name,
+      entityType: lastAnchor.entity_type,
+      entityId: lastAnchor.id,
+      entityLabel: lastAnchor.display_name,
+      genome,
+    });
     clearTypeahead();
     clearPivot();
     setSearchState({ mode: "idle", query: "", anchors: [] });
     setIsDropdownOpen(false);
     return true;
-  }, [searchState, genome, router, clearTypeahead, clearPivot]);
+  }, [searchState, genome, router, clearTypeahead, clearPivot, recordHistory]);
 
   /** Navigate directly to the best suggestion's entity page */
   const navigateToSuggestion = useCallback(
@@ -477,12 +537,20 @@ export function UniversalSearch() {
         genome,
       });
       router.push(url);
+      recordHistory({
+        kind: "search",
+        query: query || suggestion.display_name,
+        entityType: suggestion.entity_type,
+        entityId: suggestion.id,
+        entityLabel: suggestion.display_name,
+        genome,
+      });
       clearTypeahead();
       clearPivot();
       setSearchState({ mode: "idle", query: "", anchors: [] });
       setIsDropdownOpen(false);
     },
-    [genome, router, clearTypeahead, clearPivot],
+    [genome, query, router, clearTypeahead, clearPivot, recordHistory],
   );
 
   const handleSubmit = useCallback(
@@ -501,6 +569,7 @@ export function UniversalSearch() {
       if (isRoutableQuery(query)) {
         const success = await navigateToQuery(query, genome, router);
         if (success) {
+          recordHistory({ kind: "search", query, genome });
           clearTypeahead();
           setSearchState({ mode: "idle", query: "", anchors: [] });
           setIsDropdownOpen(false);
@@ -536,8 +605,45 @@ export function UniversalSearch() {
       navigateToSuggestion,
       query,
       navigateToAnchor,
+      recordHistory,
     ],
   );
+
+  // History panel handlers — used in idle mode when the dropdown is open
+  const handlePickHistoryItem = useCallback(
+    (it: HistoryItem, options?: { openInNewTab?: boolean }) => {
+      const eType = it.entityType as EntityType | undefined;
+      if (eType && it.entityId && hasEntityPage(eType)) {
+        const url = getEntityUrl(eType, it.entityId, { genome });
+        if (options?.openInNewTab) {
+          window.open(url, "_blank", "noopener,noreferrer");
+        } else {
+          router.push(url);
+          setIsDropdownOpen(false);
+        }
+        recordHistory({
+          kind: "search",
+          query: it.query ?? it.entityLabel ?? "",
+          entityType: it.entityType,
+          entityId: it.entityId,
+          entityLabel: it.entityLabel,
+          genome,
+        });
+        return;
+      }
+      // Free-text — drop into the input and let typeahead take over
+      if (it.query) {
+        setSearchState({ mode: "typing", query: it.query, anchors: [] });
+        setIsDropdownOpen(true);
+      }
+    },
+    [genome, router, recordHistory],
+  );
+
+  const handlePickSuggestedQuery = useCallback((q: string) => {
+    setSearchState({ mode: "typing", query: q, anchors: [] });
+    setIsDropdownOpen(true);
+  }, []);
 
   // Click-outside detection
   const isDropdownOpenRef = useRef(isDropdownOpen);
@@ -553,6 +659,7 @@ export function UniversalSearch() {
         isDropdownOpenRef.current
       ) {
         setIsDropdownOpen(false);
+        closeSearch();
       }
     };
 
@@ -560,12 +667,11 @@ export function UniversalSearch() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, true);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, closeSearch]);
 
   const handleFocus = () => {
-    if (query.trim().length >= 2 || searchState.anchors.length > 0) {
-      setIsDropdownOpen(true);
-    }
+    // Always open: in idle we show history; in typing/selected we show results
+    setIsDropdownOpen(true);
   };
 
   // Build flat list of typeahead suggestions for keyboard navigation
@@ -660,6 +766,7 @@ export function UniversalSearch() {
 
                 {/* Text input */}
                 <ComboboxInput
+                  ref={inputRef}
                   className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-foreground placeholder-muted-foreground/50 text-lg py-2 font-medium tracking-tight focus:outline-none"
                   displayValue={() => query}
                   onChange={(e) => handleInputChange(e.target.value)}
@@ -681,6 +788,14 @@ export function UniversalSearch() {
                       // Click = explore (pivot), Enter = go (navigate)
                       e.preventDefault();
                       handleSubmit(e as unknown as FormEvent);
+                      return;
+                    }
+
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setIsDropdownOpen(false);
+                      closeSearch();
+                      inputRef.current?.blur();
                     }
                   }}
                   placeholder={
@@ -876,11 +991,13 @@ export function UniversalSearch() {
                       </>
                     )}
 
-                  {/* IDLE MODE: Show prompt */}
+                  {/* IDLE MODE: Show recent searches (or empty-state suggestions) */}
                   {searchState.mode === "idle" && (
-                    <div className="py-8 px-6 text-center text-muted-foreground">
-                      <div className="text-sm">Start typing to search...</div>
-                    </div>
+                    <SearchHistoryPanel
+                      onPickItem={handlePickHistoryItem}
+                      onPickSuggestedQuery={handlePickSuggestedQuery}
+                      suggestions={EXAMPLE_QUERIES}
+                    />
                   )}
                 </div>
 
@@ -902,6 +1019,30 @@ export function UniversalSearch() {
                       </span>
                     </div>
                   )}
+
+                {/* Hint bar — idle mode */}
+                {searchState.mode === "idle" && (
+                  <div className="flex items-center justify-end gap-4 px-4 py-2 border-t border-border bg-muted/50 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">
+                        ↑↓
+                      </kbd>
+                      navigate
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">
+                        ↵
+                      </kbd>
+                      open
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">
+                        ⌫
+                      </kbd>
+                      remove
+                    </span>
+                  </div>
+                )}
               </ComboboxOptions>
             )}
           </Combobox>
@@ -910,13 +1051,7 @@ export function UniversalSearch() {
 
       {/* Helper Text */}
       <div className="mt-6 flex justify-center gap-8 text-sm font-medium text-muted-foreground uppercase tracking-widest opacity-80 flex-wrap">
-        {[
-          "BRCA1",
-          "rs7412",
-          "Alzheimer disease",
-          "Metformin",
-          "19-44808820-44908922",
-        ].map((search) => (
+        {EXAMPLE_QUERIES.map((search) => (
           <button
             type="button"
             key={search}

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -20,18 +21,39 @@ interface SearchContextValue {
 const SearchContext = createContext<SearchContextValue | null>(null);
 
 export function SearchProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
   const [isOpen, setIsOpen] = useState(false);
   const [initialQuery, setInitialQuery] = useState("");
+  // Tracks the most recent openSearch call so a stale 200ms cleanup
+  // from a prior closeSearch doesn't clobber a fresh initialQuery.
+  const initialQueryGenRef = useRef(0);
 
-  const openSearch = useCallback((query = "") => {
-    setInitialQuery(query);
-    setIsOpen(true);
-  }, []);
+  const openSearch = useCallback(
+    (query = "") => {
+      initialQueryGenRef.current += 1;
+      setInitialQuery(query);
+      setIsOpen(true);
+      // The search box only renders on "/". Bring the user there so the
+      // shortcut works from any page.
+      if (pathnameRef.current !== "/") {
+        router.push("/");
+      }
+    },
+    [router],
+  );
 
   const closeSearch = useCallback(() => {
     setIsOpen(false);
-    // Clear initial query after a short delay to allow the search to close smoothly
-    setTimeout(() => setInitialQuery(""), 200);
+    // Clear initial query after a short delay to allow the search to close
+    // smoothly — but only if no later openSearch has bumped the generation.
+    const gen = initialQueryGenRef.current;
+    setTimeout(() => {
+      if (initialQueryGenRef.current === gen) setInitialQuery("");
+    }, 200);
   }, []);
 
   // Store current state in ref to avoid re-attaching listener on state changes

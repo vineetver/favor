@@ -77,6 +77,22 @@ export const AREA_ORDER: ChangeArea[] = [
 
 export const RELEASES: Release[] = [
   {
+    version: "2026.04.28",
+    date: "2026-04-28",
+    title: "Search history",
+    tag: "minor",
+    summary:
+      "The search palette now remembers what you've looked at. Recent searches appear as soon as you focus the input; pin the ones you keep coming back to.",
+    changes: [
+      {
+        kind: "added",
+        area: "search",
+        source: "Cmd-K",
+        text: "Recent searches show in the empty-state dropdown, synced across your devices when signed in. ↑↓ to navigate, Enter to open, ⌘-click to open in a new tab, ⌫ to remove. Hover a row to pin it to the top.",
+      },
+    ],
+  },
+  {
     version: "2026.04.09",
     date: "2026-04-09",
     title: "GPN-MSA PHRED fix",
