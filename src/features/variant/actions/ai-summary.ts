@@ -67,7 +67,7 @@ export async function getVariantSummary(
   return { data };
 }
 
-const MAX_PROMPT_LENGTH = 12000;
+const MAX_PROMPT_LENGTH = 18000;
 
 /**
  * Server action to trigger AI summary generation for a variant.

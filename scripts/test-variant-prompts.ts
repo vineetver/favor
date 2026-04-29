@@ -16,7 +16,7 @@ import {
 import { computeVariantFrame } from "../src/features/variant/utils/variant-frame";
 
 const OUT_DIR = "/tmp/prompt-tests";
-const MAX_PROMPT_LENGTH = 12000; // matches src/features/variant/actions/ai-summary.ts
+const MAX_PROMPT_LENGTH = 18000; // matches src/features/variant/actions/ai-summary.ts
 
 function baseVariant(overrides: Partial<Variant>): Variant {
   return {

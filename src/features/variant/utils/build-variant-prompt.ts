@@ -1080,8 +1080,10 @@ function instructions(): string {
   // The data lines above already carry calibrated semantics inline (e.g.
   // "AlphaMissense: 0.087 — low Mendelian-disease pathogenicity prior...").
   // The instructions only need to teach the LLM HOW to use the Frame and
-  // resolve cross-stream conflicts. Keep this block under ~6KB so the
-  // total prompt fits the 12000-char backend cap even on data-rich variants.
+  // resolve cross-stream conflicts. Total prompt budget is 18000 chars
+  // (cap in actions/ai-summary.ts). Even data-rich variants run ~10KB,
+  // leaving comfortable headroom for context-heavy variants (deep PGS /
+  // tissue / GWAS arrays).
   return `---
 
 You are an expert variant interpreter. Write a focused, biologically committed narrative for ONE variant using the data above. The **Variant Frame** at the top names the variant's class and evidence pattern — use it to decide which evidence is the headline, not what the surrounding text is.
