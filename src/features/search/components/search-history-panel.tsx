@@ -38,10 +38,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 interface Props {
-  onPickItem: (
-    item: HistoryItem,
-    options?: { openInNewTab?: boolean },
-  ) => void;
+  onPickItem: (item: HistoryItem, options?: { openInNewTab?: boolean }) => void;
   onPickSuggestedQuery: (query: string) => void;
   suggestions: readonly string[];
 }
@@ -364,10 +361,7 @@ function Skeleton() {
   return (
     <ul className="py-1">
       {[0, 1, 2].map((i) => (
-        <li
-          key={i}
-          className="flex items-center px-5 py-2 animate-pulse"
-        >
+        <li key={i} className="flex items-center px-5 py-2 animate-pulse">
           <span className="flex-1 min-w-0 space-y-1.5">
             <span className="block h-3.5 w-2/5 rounded bg-muted" />
             <span className="block h-3 w-1/4 rounded bg-muted/60" />
