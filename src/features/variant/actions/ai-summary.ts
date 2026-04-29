@@ -148,6 +148,14 @@ export async function generateVariantSummary(params: {
 
   const prompt = buildVariantPrompt(variant, context);
 
+  // Server-side log so we can verify exactly what got sent. Truncate if
+  // huge to keep stdout readable; full prompt always reaches the model.
+  if (process.env.NODE_ENV !== "production") {
+    console.log(
+      `[variant-llm] prompt for ${params.vcf} (${prompt.length} chars):\n${prompt}`,
+    );
+  }
+
   if (prompt.length > MAX_PROMPT_LENGTH) {
     throw new Error(
       `Prompt must be a string of at most ${MAX_PROMPT_LENGTH} characters`,
