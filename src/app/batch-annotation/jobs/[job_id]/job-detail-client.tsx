@@ -2,6 +2,8 @@
 
 import {
   BatchApiError,
+  type CohortDetail,
+  type CohortStatusResponse,
   deleteCohort,
   getCohort,
   JobDetailView,
@@ -148,11 +150,40 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
 
     try {
       await deleteCohort(jobId);
-      // Await all invalidations so isCancelling stays true until fresh data arrives.
-      // Without this, the cancel button briefly reappears with stale "RUNNING" data.
+
+      // Abort any polling refetch that's already in-flight. Without
+      // this, a poll fired just before DELETE can land *after* our
+      // optimistic update and clobber it with stale "running" data,
+      // since the backend has read-after-write lag on the cohort row.
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["cohort-status", jobId] }),
-        queryClient.invalidateQueries({ queryKey: ["cohort-detail", jobId] }),
+        queryClient.cancelQueries({ queryKey: ["cohort-status", jobId] }),
+        queryClient.cancelQueries({ queryKey: ["cohort-detail", jobId] }),
+      ]);
+
+      // Optimistic flip — UI shows cancelled instantly. With
+      // is_terminal=true the polling refetchInterval returns false
+      // and stops further auto-polls. setQueriesData with a key
+      // prefix covers both "owner" and "shared" scopes in
+      // useJobPolling without us knowing which is active.
+      queryClient.setQueriesData<CohortStatusResponse>(
+        { queryKey: ["cohort-status", jobId] },
+        (old) =>
+          old ? { ...old, status: "cancelled", is_terminal: true } : old,
+      );
+      queryClient.setQueriesData<CohortDetail>(
+        { queryKey: ["cohort-detail", jobId] },
+        (old) => (old ? { ...old, status: "cancelled" } : old),
+      );
+
+      // Invalidate the LIST and quotas only — those are safe because
+      // they're not currently observed (we're on the detail page),
+      // so they're just marked stale and refetch when the user
+      // navigates back. We deliberately do NOT invalidate
+      // cohort-status / cohort-detail: that would force an immediate
+      // refetch which can land stale "running" data and clobber the
+      // optimistic state. refetchOnMount / refetchOnWindowFocus
+      // reconcile against the server on next user action.
+      await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["quotas"] }),
         queryClient.invalidateQueries({ queryKey: ["cohorts"] }),
       ]);
