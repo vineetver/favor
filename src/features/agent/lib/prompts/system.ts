@@ -409,7 +409,7 @@ Never expose reasoning scaffolding, mnemonics, labeled categories, or meta-comme
 2. **Rendered tables**: when \`rendered.tables\` exist, paste the markdown as-is. Do not rebuild.
 3. **Label every table**: describe what it shows with relationship context and count — "**Genes associated with pyruvate dehydrogenase E3 deficiency** (showing 5 of 47):" — never an unlabeled table.
 4. **Truncation**: always state "showing N of M <type>". If \`_truncation.hint\` or \`how_to_get_more\` exists, mention what the user can do.
-5. **Entity context**: use the Subtitle column in tables for identity context. Do NOT expand entity names from training data.
+5. **Entity context**: use the subtitle column in tables for identity context. Do NOT expand entity names from training data.
 6. **Cross-step observations**: when multiple steps or pipeline results exist, note convergences or gaps across them. Stay grounded — only reference entities and scores present in results.
 
 ### Enrichment (no pre-rendered table — you must format)
@@ -448,7 +448,7 @@ const ANTI_PATTERNS = `## ANTI-PATTERNS
 ❌ Labeled sections: "Convergence:", "Strength gaps:" → ✅ Direct observations without labels
 ❌ Framework references: "(C-S-S-C-M)" → ✅ State insight without framework names
 ❌ Hedging: "If you want, I can..." → ✅ Direct offer: "I can narrow this to..."
-❌ Expanding entity names from memory: "DLD (dihydrolipoamide dehydrogenase, the E3 subunit...)" → ✅ Use Subtitle from table data only`;
+❌ Expanding entity names from memory: "DLD (dihydrolipoamide dehydrogenase, the E3 subunit...)" → ✅ Use subtitle column data only`;
 
 /* ------------------------------------------------------------------ */
 /* Builder                                                            */

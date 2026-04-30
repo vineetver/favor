@@ -1301,15 +1301,19 @@ function renderEntityTable(
   const hasProvenance =
     opts.showProvenance && entities.some((e) => e.edgeProperties);
 
-  // Build header — use entity type instead of generic "Name"
+  // Build header — use the actual field names so the column self-identifies.
+  // Score column carries the data field's name (e.g. "ot_score", "l2g_score",
+  // "cadd_phred"); only generic "score" stays generic. No hand-curated label
+  // map — the field name IS the label, and humanScoreLabel covers any prose
+  // gloss the agent needs separately via scoreContext.
   const entityType = entities[0]?.type;
   const cols: string[] = [entityType ? String(entityType) : "Name"];
-  if (hasScore) cols.push("Score");
+  if (hasScore) cols.push(opts.scoreField ?? "score");
   if (hasPValue) cols.push("p-value");
-  if (hasFold) cols.push("Fold");
-  if (hasSupport) cols.push("Support");
-  if (hasProvenance) cols.push("Evidence");
-  cols.push("Subtitle");
+  if (hasFold) cols.push("fold enrichment");
+  if (hasSupport) cols.push("source seeds");
+  if (hasProvenance) cols.push("provenance");
+  cols.push("subtitle");
 
   const header = `| ${cols.join(" | ")} |`;
   const sep = `|${cols.map(() => "---").join("|")}|`;
