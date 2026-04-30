@@ -1009,6 +1009,12 @@ function regionEvidenceSection(
 ): string | null {
   if (!counts) return null;
 
+  // These counts come from /regions/{loc} and aggregate every entry the
+  // surrounding region intersects — they do NOT mean this specific variant
+  // was experimentally tested. A 3'UTR variant routinely sees thousands
+  // of CRISPR screens because the screens are gene-level. Render with an
+  // explicit "in surrounding region (not necessarily targeting this
+  // variant)" label so the LLM doesn't claim the variant was validated.
   const parts: string[] = [];
   if (counts.signals) parts.push(`${counts.signals} cCRE signals`);
   if (counts.chromatin_states)
@@ -1019,12 +1025,12 @@ function regionEvidenceSection(
     parts.push(`${counts.accessibility_peaks} accessibility peaks`);
   if (counts.loops) parts.push(`${counts.loops} chromatin loops`);
   if (counts.validated_enhancers)
-    parts.push(`${counts.validated_enhancers} validated enhancers`);
+    parts.push(`${counts.validated_enhancers} MPRA-validated enhancers`);
   if (counts.crispr_screens)
     parts.push(`${counts.crispr_screens} CRISPR screens`);
 
   if (!parts.length) return null;
-  return `## Region Evidence\n- ${parts.join(", ")}`;
+  return `## Surrounding Region (aggregate counts — NOT necessarily targeting this variant)\n- ${parts.join(", ")}`;
 }
 
 // ---------------------------------------------------------------------------

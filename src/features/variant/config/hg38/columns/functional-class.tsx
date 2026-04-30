@@ -265,6 +265,53 @@ function TranscriptLinks({
 }
 
 // ============================================================================
+// Gene-symbol parsing
+//
+// FAVOR's `genecode.genes` is typed as `Array<string | null>` per gene, but
+// for some variants the API returns a single combined string like
+//   "(ENST00000262554.7:c.*39G>A,ENST00000644140.1:c.*1202G>A), SPTLC1"
+// where the transcript HGVSc notation is embedded alongside the symbol.
+// Linking that whole string as one gene produces a broken EntityLink.
+//
+// extractGeneSymbols() strips parenthesized transcript blocks, splits on
+// commas, and keeps tokens that look like real gene symbols (alphanumeric +
+// hyphen/dot/underscore, no operators or colons). Robust to both the clean
+// case (one symbol per array element) and the malformed combined case.
+// ============================================================================
+
+// HGNC-conformant gene symbols: start with an uppercase letter, then a
+// mix of alphanumerics, hyphens, dots, underscores. Covers standard
+// (BRCA1, TP53), open-reading-frame (C9orf72), mitochondrial (MT-ND1),
+// HLA / IGHV (HLA-A, IGHV3-23), pseudogenes, ribosomal, ncRNA names.
+const GENE_SYMBOL = /^[A-Z][A-Za-z0-9._-]*$/;
+// HGVS-prefixed tokens: p.Arg46Leu, c.39G>A, n.123A>G, g.123T>C, m.123A>G
+// always start "<single letter>.<rest>" — reject these even if uppercase.
+const HGVS_PREFIX = /^[A-Za-z]\./;
+
+function extractGeneSymbols(raw: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (!entry) continue;
+    // Strip parenthesized chunks (transcript blocks like
+    // "(ENST...:c.*39G>A,ENST...:c.*1202G>A)") before tokenising.
+    const stripped = entry.replace(/\([^)]*\)/g, "");
+    // Split on commas, semicolons, or whitespace — covers all delimiter
+    // shapes the API has been observed to use.
+    for (const tok of stripped.split(/[,;\s]+/)) {
+      const candidate = tok.trim();
+      if (!candidate) continue;
+      if (HGVS_PREFIX.test(candidate)) continue;
+      if (!GENE_SYMBOL.test(candidate)) continue;
+      if (seen.has(candidate)) continue;
+      seen.add(candidate);
+      out.push(candidate);
+    }
+  }
+  return out;
+}
+
+// ============================================================================
 // Column Definitions
 // ============================================================================
 
@@ -279,10 +326,11 @@ export const functionalClassColumns = [
       citation: "Frankish et al., 2018; Harrow et al., 2012",
     }),
     cell: ({ row }) => {
-      const genes = (
+      const raw = (
         row.getValue("genecode_comprehensive_info") as Array<string | null>
       )?.filter((g): g is string => Boolean(g));
-      if (!genes?.length) return <div className="font-mono">-</div>;
+      const genes = extractGeneSymbols(raw ?? []);
+      if (!genes.length) return <div className="font-mono">-</div>;
       return (
         <div className="font-mono">
           {genes.map((g, i) => (

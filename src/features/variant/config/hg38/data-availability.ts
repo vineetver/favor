@@ -2,12 +2,19 @@ import type { Variant } from "@features/variant/types";
 
 type DataCheck = (v: Variant) => boolean;
 
-const hasAny = (obj: unknown): boolean =>
-  obj != null &&
-  (typeof obj !== "object" ||
-    Object.values(obj as Record<string, unknown>).some(
-      (v) => v != null && v !== "",
-    ));
+const isMeaningful = (v: unknown): boolean => {
+  if (v == null || v === "") return false;
+  if (Array.isArray(v)) return v.some(isMeaningful);
+  if (typeof v === "object")
+    return Object.values(v as Record<string, unknown>).some(isMeaningful);
+  return true;
+};
+
+// `hasAny` returns true only when at least one *leaf* value is non-empty.
+// Empty arrays and empty nested objects no longer count as data — that
+// was letting ClinVar tabs render for variants whose API response was
+// `{clnsig: [], clndn: []}` (empty arrays inside non-null parent).
+const hasAny = (obj: unknown): boolean => isMeaningful(obj);
 
 /**
  * Maps navigation slugs → data availability predicate.

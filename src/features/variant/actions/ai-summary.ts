@@ -173,7 +173,7 @@ export async function generateVariantSummary(params: {
       entity_id: params.vcf,
       content_type: "summary",
       prompt,
-      model: params.model ?? "gpt-4o-mini",
+      model: params.model ?? "gpt-5.4-mini",
     }),
   });
 

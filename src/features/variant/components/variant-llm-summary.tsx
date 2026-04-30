@@ -19,7 +19,7 @@ const TITLE_STRIP = /^#{1,3}\s*Variant Summary[:\s].*?\n+/i;
 
 export function VariantLLMSummary({
   variant,
-  modelId = "gpt-4o-mini",
+  modelId = "gpt-5.4-mini",
 }: VariantLLMSummaryProps) {
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
   const askFollowUp = useAskFollowUp();

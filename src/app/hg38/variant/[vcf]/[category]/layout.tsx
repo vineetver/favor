@@ -1,6 +1,7 @@
 import { VariantHeader } from "@features/variant/components/header/variant-header";
 import { variantDataChecks } from "@features/variant/config/hg38/data-availability";
 import { VARIANT_NAVIGATION_CONFIG } from "@features/variant/config/hg38/navigation";
+import { fetchTabAvailability } from "@features/variant/utils/fetch-tab-availability";
 import { fetchVariantWithCookie } from "@features/variant/utils/fetch-with-cookie";
 import { MobileSubNavigation } from "@shared/components/navigation/mobile-sub-navigation";
 import { NavigationSidebar } from "@shared/components/navigation/navigation-sidebar";
@@ -30,14 +31,23 @@ export default async function VariantLayout({
     notFound();
   }
 
-  // Fetch variant with cookie-based selection
-  const result = await fetchVariantWithCookie(vcf);
+  // Fetch variant + tab-availability counts in parallel. The four graph-
+  // backed tabs (credible-sets, l2g-scores, pharmacogenomics, gwas-catalog)
+  // can't be resolved from the Variant payload alone — fetchTabAvailability
+  // hits the graph + GWAS endpoints with limit=1 and returns slugs to disable.
+  const [result, externalDisabledSlugs] = await Promise.all([
+    fetchVariantWithCookie(vcf),
+    fetchTabAvailability(vcf).catch(() => [] as string[]),
+  ]);
 
   if (!result) {
     notFound();
   }
 
-  const disabledSlugs = getDisabledSlugs(result.selected, variantDataChecks);
+  const disabledSlugs = [
+    ...getDisabledSlugs(result.selected, variantDataChecks),
+    ...externalDisabledSlugs,
+  ];
 
   return (
     <div className="min-h-screen bg-background">

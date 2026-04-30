@@ -72,9 +72,15 @@ export function computeVariantFrame(
   const topGwasTrait = context?.gwas?.top?.[0]?.trait ?? null;
   const gwasCount = context?.gwas?.totalAssociations ?? 0;
   const hasClinvarPLP = hasPathogenicClinvar(variant);
-  const hasRegulatoryEvidence = hasRegEvidence(variant, context);
+  // Enumerate ACTUAL evidence sources rather than booleans so the frame
+  // headline can list only the sources present — avoids the LLM cargo-
+  // culting a generic "MPRA / CRISPR / Perturb-seq / MAVE" string when
+  // only one of those signals is in the data.
+  const regSources = regulatorySources(variant, context);
+  const valSources = validationSources(context);
+  const hasRegulatoryEvidence = regSources.length > 0;
+  const hasValidation = valSources.length > 0;
   const aloftClass = aloftSeverityClass(variant);
-  const hasValidation = hasValidationEvidence(variant, context);
   const pgsHits = context?.pgs?.totalHits ?? 0;
   const pgsTraits = context?.pgs?.uniqueTraits ?? 0;
 
@@ -100,9 +106,9 @@ export function computeVariantFrame(
       gwasCount,
       am,
       hasClinvarPLP,
-      hasRegulatoryEvidence,
+      regulatorySources: regSources,
+      validationSources: valSources,
       aloftClass,
-      hasValidation,
       pgsHits,
       pgsTraits,
     }),
@@ -390,40 +396,50 @@ function hasPathogenicClinvar(v: Variant): boolean {
   });
 }
 
-function hasRegEvidence(
+// Enumerate every regulatory signal actually present in the data block.
+// Used by the frame headline so the LLM lists only what's there — never
+// generic "cCRE / QTL / enhancer evidence" placeholder strings.
+function regulatorySources(
   v: Variant,
   context: VariantPromptContext | undefined,
-): boolean {
-  if (v.ccre?.annotations) return true;
-  if (v.genehancer?.id) return true;
-  if (v.cage?.cage_promoter || v.cage?.cage_enhancer) return true;
-  if (v.super_enhancer?.ids?.length) return true;
-  // pgboost: predicted enhancer-gene link (Sethi 2020). Score > 0.5 with
-  // top percentile is a high-confidence regulatory predictor.
-  if (v.pgboost?.some((p) => (p.score ?? 0) >= 0.5)) return true;
-  // ChromHMM dominant state in an active enhancer / promoter / TSS class
-  // (states 1-4, 9-18, 19, 22-23 by Roadmap 25-state model) is real
-  // regulatory evidence even when no cCRE / GeneHancer call exists.
-  if (hasActiveChromHmmState(v)) return true;
-  // ReMap TF ChIP-seq overlap (any TF binding here in any cell line) is
-  // direct evidence of regulatory occupancy.
-  if ((v.main?.remap?.overlap_tf ?? 0) > 0) return true;
-  // Top FAVOR aPC epigenetics PHRED >=10 = top 10% chromatin signal.
-  const apc = v.apc;
-  if (apc) {
-    if ((apc.epigenetics_active ?? 0) >= 10) return true;
-    if ((apc.transcription_factor ?? 0) >= 10) return true;
+): string[] {
+  const sources: string[] = [];
+  if (v.ccre?.annotations) sources.push(`cCRE (${v.ccre.annotations})`);
+  if (v.genehancer?.id) sources.push("GeneHancer enhancer");
+  if (v.cage?.cage_promoter) sources.push("CAGE promoter");
+  if (v.cage?.cage_enhancer) sources.push("CAGE enhancer");
+  if (v.super_enhancer?.ids?.length) sources.push("super-enhancer");
+  if (v.pgboost?.some((p) => (p.score ?? 0) >= 0.5)) {
+    sources.push("pgboost enhancer-gene link");
   }
-  if (context?.qtlTissues?.some((t) => (t.significant ?? 0) > 0)) return true;
-  if (context?.signalTissues?.some((t) => t.count > 0)) return true;
-  if (context?.chromBpnetTissues?.some((t) => t.count > 0)) return true;
-  if (
-    context?.regionOverlaps?.enhancer_gene ||
-    context?.regionOverlaps?.epiraction
-  ) {
-    return true;
+  if (hasActiveChromHmmState(v)) {
+    sources.push("active ChromHMM state");
   }
-  return false;
+  if ((v.main?.remap?.overlap_tf ?? 0) > 0) {
+    sources.push("ReMap TF binding");
+  }
+  if ((v.apc?.epigenetics_active ?? 0) >= 10) {
+    sources.push("aPC-Epigenetics-Active PHRED >=10");
+  }
+  if ((v.apc?.transcription_factor ?? 0) >= 10) {
+    sources.push("aPC-Transcription-Factor PHRED >=10");
+  }
+  if (context?.qtlTissues?.some((t) => (t.significant ?? 0) > 0)) {
+    sources.push("significant tissue QTLs");
+  }
+  if (context?.signalTissues?.some((t) => t.count > 0)) {
+    sources.push("tissue cCRE signals");
+  }
+  if (context?.chromBpnetTissues?.some((t) => t.count > 0)) {
+    sources.push("ChromBPNet predictions");
+  }
+  if ((context?.regionOverlaps?.enhancer_gene ?? 0) > 0) {
+    sources.push("enhancer-gene maps");
+  }
+  if ((context?.regionOverlaps?.epiraction ?? 0) > 0) {
+    sources.push("EPIraction enhancer-promoter contacts");
+  }
+  return sources;
 }
 
 // Active chromatin states from Roadmap 25-state ChromHMM:
@@ -453,31 +469,47 @@ function hasActiveChromHmmState(v: Variant): boolean {
 }
 
 // MPRA / CRISPR / Perturb-seq / MAVE — actual functional validation in a
-// cell context, distinct from annotation-only regulatory evidence. We
-// route these into a dedicated `validated_regulatory_candidate` pattern
-// so the LLM treats them as the headline rather than secondary annotation.
-function hasValidationEvidence(
-  _v: Variant,
+// cell context, distinct from annotation-only regulatory evidence. Each
+// data source is enumerated *only* when its count is non-zero, so the
+// frame headline never claims a method was used when its evidence is
+// absent (previously the LLM would parrot "MPRA / CRISPR / Perturb-seq /
+// MAVE" verbatim from a generic literal in the headline).
+//
+// region_counts.* signals are region-level (validated enhancer overlapping
+// the position, CRISPR screen targeting the surrounding region) — not
+// necessarily ON the variant. perturbation.* signals are on linked genes,
+// also not direct variant validation. The headline qualifies each as
+// "in surrounding region" / "on linked gene" so the LLM doesn't claim
+// the variant itself was experimentally tested.
+// Validation evidence is only counted when it's variant-specific (linked
+// through the knowledge graph to genes with perturbation data) or when
+// the variant ID itself has a hit in MaveDB / MPRA tables. The regional
+// aggregates `regionCounts.validated_enhancers` and
+// `regionCounts.crispr_screens` are NOT used: they count any screen
+// touching the surrounding locus (e.g. 1205 CRISPR screens at a 1-bp
+// query for SPTLC1's 3'UTR — they're targeting the gene, not the base).
+// Treating those as validation triggered the `validated_regulatory_candidate`
+// pattern for variants that have no direct functional validation, and the
+// LLM cargo-culted "proven by MPRA / Perturb-seq" from the headline.
+function validationSources(
   context: VariantPromptContext | undefined,
-): boolean {
-  if (
-    context?.regionCounts?.validated_enhancers ||
-    context?.regionCounts?.crispr_screens
-  ) {
-    return true;
-  }
+): string[] {
+  const sources: string[] = [];
   const p = context?.perturbation;
-  if (p) {
-    if (
-      (p.crisprGenes ?? 0) > 0 ||
-      (p.perturbSeqGenes ?? 0) > 0 ||
-      (p.maveGenes ?? 0) > 0
-    ) {
-      return true;
-    }
+  if ((p?.crisprGenes ?? 0) > 0) {
+    sources.push(`CRISPR-screen evidence on ${p?.crisprGenes} linked gene(s)`);
   }
-  // ALoFT lives in the LoF / coding pathway, not regulatory validation.
-  return false;
+  if ((p?.perturbSeqGenes ?? 0) > 0) {
+    sources.push(
+      `Perturb-seq evidence on ${p?.perturbSeqGenes} linked gene(s)`,
+    );
+  }
+  if ((p?.maveGenes ?? 0) > 0) {
+    sources.push(
+      `MAVE / saturation-mutagenesis on ${p?.maveGenes} linked gene(s)`,
+    );
+  }
+  return sources;
 }
 
 // ALoFT (Annotation of LoF Transcripts; Balasubramanian et al. Nat Commun
@@ -508,9 +540,11 @@ interface HeadlineInputs {
   gwasCount: number;
   am: number | null;
   hasClinvarPLP: boolean;
-  hasRegulatoryEvidence: boolean;
+  /** Actual regulatory signals present (e.g. "cCRE (PLS)", "GeneHancer"). */
+  regulatorySources: string[];
+  /** Actual validation experiments with evidence (e.g. "MPRA-validated enhancer in surrounding region"). */
+  validationSources: string[];
   aloftClass: AloftClass;
-  hasValidation: boolean;
   pgsHits: number;
   pgsTraits: number;
 }
@@ -532,12 +566,24 @@ function headlineFor(pattern: EvidencePattern, inp: HeadlineInputs): string {
       return `${gwasBlurb} (low Mendelian-pathogenicity AlphaMissense in coding region — consistent with hypomorphic / partial-LOF allele)`;
     case "common_quantitative_trait":
       return `${gwasBlurb} (common variant, quantitative-trait architecture)`;
-    case "validated_regulatory_candidate":
-      return `Functionally validated regulatory variant (MPRA / CRISPR / Perturb-seq / MAVE)${inp.topGwasP != null ? `; ${gwasBlurb}` : ""}`;
-    case "regulatory_qtl_candidate":
-      return inp.hasRegulatoryEvidence
-        ? `Regulatory annotation (cCRE / QTL / enhancer evidence)${inp.topGwasP != null ? `; ${gwasBlurb}` : ""}`
-        : `${gwasBlurb} in noncoding region`;
+    case "validated_regulatory_candidate": {
+      // Enumerate ONLY the actual validation evidence in the data — never
+      // a generic "MPRA / CRISPR / Perturb-seq / MAVE" string. Empty
+      // shouldn't happen here (the pattern requires non-empty), but
+      // guarded anyway.
+      const list = inp.validationSources.length
+        ? inp.validationSources.join("; ")
+        : "regulatory validation evidence present";
+      return `Functionally validated regulatory variant — ${list}${inp.topGwasP != null ? `; ${gwasBlurb}` : ""}`;
+    }
+    case "regulatory_qtl_candidate": {
+      // Enumerate ONLY the actual regulatory signals — never a generic
+      // "cCRE / QTL / enhancer evidence" placeholder.
+      if (inp.regulatorySources.length) {
+        return `Regulatory evidence: ${inp.regulatorySources.join("; ")}${inp.topGwasP != null ? `; ${gwasBlurb}` : ""}`;
+      }
+      return `${gwasBlurb} in noncoding region`;
+    }
     case "polygenic_contributor":
       return `Polygenic contributor: ${inp.pgsHits} PGS weights across ${inp.pgsTraits} traits, no single GWAS-significant hit`;
     case "vus":

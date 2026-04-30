@@ -38,7 +38,7 @@ export type VariantSummaryState =
  */
 export function useVariantSummary({
   vcf,
-  modelId = "gpt-4o-mini",
+  modelId = "gpt-5.4-mini",
   enabled = true,
 }: UseVariantSummaryOptions) {
   const queryClient = useQueryClient();
