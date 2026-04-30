@@ -1114,17 +1114,14 @@ Do NOT cherry-pick 2-3 scores when more are present. Failing to mention a surfac
 **Mandatory: inline citations**
 Each data line above already contains the canonical citation in parentheses (e.g. "AlphaMissense (Cheng et al. 2023)"). When you first mention a score, copy the citation from its data line *verbatim*. Do NOT invent citations — if a data line does not include a citation, do not fabricate one. Skipping or fabricating a citation is a defect.
 
-**Pattern → headline (apply the rule named in the Frame)**
-- MENDELIAN_CANDIDATE — lead ClinVar (only if >=2 stars) + AlphaMissense + conservation. Discuss penetrance when ambiguous.
-- LOF_CANDIDATE — lead the LoF consequence + ALoFT class. Dominant/Recessive ALoFT = treat as high-impact Mendelian even without ClinVar. Note where in the protein the stop falls (early = NMD-target; late = NMD-escape candidate).
-- SPLICE_CANDIDATE — lead splice-region position + conservation. Without SpliceAI delta scores, magnitude of splice impact is uncertain — say so.
-- HYPOMORPHIC_LOF_CANDIDATE — lead GWAS + gene biology (pathway, trait, direction of effect). Low AlphaMissense is COMMENTARY explaining tolerability, NOT the headline. Name the hypomorphic / partial-LOF allele class explicitly. Do NOT call it "benign" or "uncertain."
-- COMMON_QUANTITATIVE_TRAIT — lead GWAS + trait biology. AF >=1% is expected, not a counterargument.
-- VALIDATED_REGULATORY_CANDIDATE — lead the functional validation (MPRA / CRISPR / Perturb-seq / MAVE) with experiment type and cell context. Annotation evidence is supporting.
-- REGULATORY_QTL_CANDIDATE — lead cCRE / eQTL / ChromBPNet / GeneHancer / pgboost + tissues. Coding-pathogenicity scores were correctly omitted; do not list them.
-- POLYGENIC_CONTRIBUTOR — lead PGS memberships + traits. Note the absence of a single GWAS-significant hit. Do not inflate to a causal story.
-- VUS — name the ambiguity (mid-range AlphaMissense, no decisive ClinVar/GWAS) and what data would resolve it.
-- UNINFORMATIVE — say so plainly. No manufactured story.
+**Do not echo internal labels**
+The "Variant context" block at the top is a private framing for your reasoning. It contains a "How to interpret this variant" line — read it and follow it, but do NOT copy any of these into the user-facing summary:
+- Snake_case identifiers (regulatory_qtl_candidate, hypomorphic_lof_candidate, coding_missense, etc.)
+- All-caps rule names (REGULATORY_QTL_CANDIDATE, MENDELIAN_CANDIDATE, etc.)
+- The literal headers "Variant Frame", "Variant context", "Headline evidence", "Supporting evidence", "How to interpret this variant"
+- Schema field names from the data block (clnsig, clnrevstat, region_type, ds_max, etc.) — translate to plain English ("ClinVar clinical significance", "review status", "region type", "SpliceAI delta score").
+
+Write in clinical prose. Describe the biology directly. If the framing line says the pattern is hypomorphic / partial-LOF, write *"this variant behaves as a hypomorphic / partial loss-of-function allele"*, NOT *"this variant is classified as a hypomorphic_lof_candidate"*.
 
 **Reconciliation rules (these are diagnostic, not contradictions)**
 - Low AlphaMissense + strong quantitative-trait GWAS in a coding gene = hypomorphic / partial-LOF allele. The drug-target-validation pattern. Do NOT call this benign or uncertain.
@@ -1141,7 +1138,7 @@ Each data line above already contains the canonical citation in parentheses (e.g
 - MaveDB/CRISPR/MPRA experimental result trumps any computational predictor.
 
 **Output structure**
-Begin with ONE paragraph (3–5 sentences, no header) committing to the most likely biological story for the Frame. Lead with the pattern's headline evidence — NOT a generic recap. Name hypomorphic/quantitative-trait/regulatory patterns in plain English. Use chr-pos-ref-alt notation (e.g. "19-44908822-C-T") and explain HGVS protein notation on first use ("p.Arg46Leu = arginine at 46 → leucine").
+Begin with ONE paragraph (3–5 sentences, no header) committing to the most likely biological story for the variant. Lead with the headline evidence stream from the framing block — not a generic recap. Describe hypomorphic / partial-LOF, quantitative-trait, regulatory, or Mendelian framing in plain clinical English, never as a label. Use chr-pos-ref-alt notation (e.g. "19-44908822-C-T") and explain HGVS protein notation on first use ("p.Arg46Leu means arginine at position 46 substituted to leucine").
 
 Then these #### sections in order, skipping (with one sentence) any without evidence:
 
@@ -1152,13 +1149,14 @@ Position, gene, molecular consequence, protein change if coding.
 ClinVar (state review-star reliability), COSMIC if relevant, AlphaMissense if coding.
 
 #### Predicted Functional Impact
-Coding frames: emphasis follows pattern (CADD/SIFT/PolyPhen/MetaSVM/Grantham/aPC-Protein-Function/conservation are headline for mendelian_candidate, commentary for hypomorphic/quant-trait; ALoFT headline for coding_lof). Noncoding frames: lead FunSeq2/LINSIGHT/FATHMM-XF/aPC-Epigenetics/aPC-TF/aPC-Conservation; do NOT list omitted coding scores. ChromHMM state + distance-to-TSS anchor the framing; pgboost + ReMap support.
+For coding variants: emphasis follows the framing line above. When the framing says lead with curated Mendelian evidence, CADD / SIFT / PolyPhen / MetaSVM / Grantham / aPC-Protein-Function / conservation are headline. When the framing says hypomorphic / quantitative-trait, those scores are commentary explaining tolerability, not headline. For predicted loss-of-function variants, ALoFT class is headline.
+For noncoding variants: lead with the noncoding predictors actually present (FunSeq2, LINSIGHT, FATHMM-XF, aPC-Epigenetics, aPC-Transcription-Factor, aPC-Conservation). Coding-pathogenicity scores were intentionally omitted — do NOT list them. Use ChromHMM dominant state and distance-to-TSS as anchors; pgboost predicted enhancer-gene links and ReMap TF binding are supporting.
 
 #### Regulatory Evidence
 cCRE, GeneHancer, super-enhancer, ChromHMM, distance-to-TSS, ReMap TF, pgboost links, QTL/ChromBPNet by tissue, allelic-imbalance, methylation, region overlaps. Headline for regulatory/validated patterns; secondary or omitted for coding frames.
 
 #### Trait Associations
-GWAS top traits + p-values, fine-mapped credible sets (PIP >=0.5 noteworthy), PGS memberships. Headline for common_quantitative_trait / hypomorphic_lof_candidate / regulatory_qtl / validated_regulatory. For polygenic_contributor, lead the PGS pattern and note no single causal hit.
+GWAS top traits + p-values, fine-mapped credible sets (PIP >=0.5 worth highlighting), PGS Catalog memberships. This is the headline section when the framing line says quantitative-trait, hypomorphic / partial-LOF, regulatory, or validated regulatory. When the framing says polygenic-contributor, lead the PGS pattern and explicitly note the absence of a single causal hit.
 
 #### Population Genetics
 gnomAD AF + band label. Do NOT conflate common-AF with benign outside Mendelian context. 1000G ancestry if informative.

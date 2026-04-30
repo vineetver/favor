@@ -13,23 +13,26 @@ type JSONValue =
   | { [key: string]: JSONValue | undefined };
 type ProviderOptions = Record<string, Record<string, JSONValue | undefined>>;
 
-// Tool-calling model (routing, planning, tool selection)
-export const nanoModel = openai("gpt-5-nano");
+// Tool-calling model (routing, planning, tool selection).
+// gpt-5.4-mini: 400K context, 128K output, faster than gpt-5.4, good
+// at function-calling / subagent dispatch.
+export const nanoModel = openai("gpt-5.4-mini");
 
-// Provider options for the nano model (used in prepareStep)
+// Provider options for the tool-calling model (used in prepareStep)
 export const NANO_PROVIDER_OPTIONS: ProviderOptions = {
   openai: {
     reasoningEffort: "low",
   } satisfies OpenAILanguageModelResponsesOptions,
 };
 
-// Synthesis models (user-selectable)
+// Synthesis models (user-selectable).
+// fast = gpt-5.4-mini (faster, 400K context, $0.75/$4.50 per MTok)
+// thinking = gpt-5.4 (1M context, 128K output, $2.50/$15 per MTok)
 const SYNTHESIS_MODES = {
   fast: {
     label: "Fast",
-    description: "GPT-5 Nano",
-    factory: () => openai("gpt-5-nano"),
-    // Fast path: same nano model with minimal reasoning
+    description: "GPT-5.4 mini",
+    factory: () => openai("gpt-5.4-mini"),
     providerOptions: {
       openai: {
         reasoningEffort: "minimal",
@@ -38,9 +41,8 @@ const SYNTHESIS_MODES = {
   },
   thinking: {
     label: "Thinking",
-    description: "GPT-5.2",
-    factory: () => openai("gpt-5.2"),
-    // Thinking path: full reasoning
+    description: "GPT-5.4",
+    factory: () => openai("gpt-5.4"),
     providerOptions: undefined as ProviderOptions | undefined,
   },
 };

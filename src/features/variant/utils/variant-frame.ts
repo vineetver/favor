@@ -623,29 +623,86 @@ function supportingFor(opts: {
   return parts.join(", ");
 }
 
+// ruleNameFor stays for internal reasoning (kept on FrameResult for callers
+// that want to log/branch on the symbolic name) but is NOT rendered into
+// the prompt — the LLM was echoing the all-caps label verbatim into
+// summaries ("This variant is classified as a REGULATORY_QTL_CANDIDATE...").
 function ruleNameFor(pattern: EvidencePattern): string {
   return pattern.toUpperCase();
 }
 
 // ---------------------------------------------------------------------------
+// Plain-English descriptions for the prompt
+//
+// The LLM never sees the snake_case `kind` or the upper-case `pattern`
+// label. Both are translated to clinical prose so the model can't echo
+// internal IDs into the user-facing summary. Each describePattern() entry
+// is a concrete *how to interpret this variant* paragraph keyed to the
+// pattern — the LLM reads only the prose, never the label.
+// ---------------------------------------------------------------------------
+
+function describeClass(f: VariantFrame): string {
+  switch (f.kind) {
+    case "coding_missense":
+      return `Coding missense substitution${f.protein ? ` (${f.protein})` : ""}`;
+    case "coding_lof":
+      return `Coding loss-of-function variant — ${f.lofType}${f.protein ? ` (${f.protein})` : ""}`;
+    case "coding_synonymous_or_other":
+      return "Coding variant (synonymous / in-frame indel)";
+    case "splice_region":
+      return "Splice-region variant";
+    case "regulatory_noncoding":
+      return "Noncoding variant in a regulatory region (intronic / UTR / regulatory annotation)";
+    case "intergenic":
+      return "Intergenic variant";
+    case "unknown":
+      return "Variant with unresolved consequence";
+  }
+}
+
+function describePattern(pattern: EvidencePattern): string {
+  switch (pattern) {
+    case "mendelian_candidate":
+      return "Lead with the curated ClinVar pathogenic / likely-pathogenic call (only authoritative if review-status >= 2 stars). Population rarity supports the Mendelian framing. Discuss penetrance and the associated condition. Coding-pathogenicity scores (AlphaMissense, conservation, aPC-Protein-Function) are supporting evidence.";
+    case "lof_candidate":
+      return "Lead with the loss-of-function consequence and the ALoFT class. If ALoFT predicts dominant or recessive impact, treat this as a high-impact Mendelian variant even without a curated ClinVar entry. Note where the stop / frameshift falls in the protein (early stop = NMD-target; late stop = NMD-escape candidate, possibly tolerated).";
+    case "splice_candidate":
+      return "Lead with the splice-region position and conservation. Without a SpliceAI delta score in the data block, splicing impact magnitude is uncertain — say so explicitly.";
+    case "hypomorphic_lof_candidate":
+      return "Lead with the GWAS evidence and the gene's biology — which pathway, which trait, which direction of effect. The low AlphaMissense score is COMMENTARY explaining why the variant is tolerated in the population, NOT the headline. Explicitly explain the variant as a hypomorphic / partial-loss-of-function allele that sits between full-LOF (Mendelian-severe at the same gene if applicable) and silent. Do NOT call this variant 'benign' or 'uncertain'.";
+    case "common_quantitative_trait":
+      return "Lead with the GWAS / fine-mapping evidence and the trait biology. Coding-pathogenicity scores explain why the variant is tolerated. AF >= 1% is expected for this variant class — do not present commonness as evidence against importance.";
+    case "validated_regulatory_candidate":
+      return "Lead with the functional validation evidence (named explicitly above — only the methods that actually have evidence). Name the experiment type and the cell context. Annotation evidence (cCRE, ChromHMM, eQTL) is supporting context, not the headline.";
+    case "regulatory_qtl_candidate":
+      return "Lead with the regulatory evidence enumerated above — cCRE annotation, QTL signals, chromatin marks, predicted enhancer-gene links, ReMap TF binding, etc. — and name the tissues with signal. Coding-pathogenicity scores were intentionally omitted upstream because they do not apply to noncoding variants. Do NOT speculate about MPRA / CRISPR / Perturb-seq / MAVE evidence unless it appears in the data block.";
+    case "polygenic_contributor":
+      return "Lead with the PGS Catalog memberships and the traits the variant contributes to. State explicitly that no single GWAS hit is genome-wide-significant, so the variant matters as a contributor to polygenic prediction rather than a single-trait causal driver. Do NOT inflate this into a Mendelian or single-trait causal story.";
+    case "vus":
+      return "Name the ambiguity explicitly: AlphaMissense in 0.34-0.564 grey zone, no decisive ClinVar or GWAS signal. State what additional data would resolve it (functional assay, family segregation, larger cohort).";
+    case "uninformative":
+      return "Say plainly that no evidence stream rises above background. Do NOT manufacture a story or speculate. List the categories that came back empty (no ClinVar entry, no GWAS hit, no regulatory annotation, no QTL, no perturbation).";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Frame section text (rendered into the prompt)
+//
+// Internal symbolic names (snake_case `kind`, upper-case pattern) are NOT
+// surfaced. The LLM sees plain-English class + a concrete interpretation
+// instruction. The instructions block adds an explicit "do not echo any
+// internal labels" rule.
 // ---------------------------------------------------------------------------
 
 export function frameSection(result: FrameResult): string {
-  const lines = ["## Variant Frame"];
-  const f = result.frame;
-  const classLabel =
-    f.kind === "coding_missense"
-      ? `coding_missense${f.protein ? ` (${f.protein})` : ""}`
-      : f.kind === "coding_lof"
-        ? `coding_lof: ${f.lofType}${f.protein ? ` (${f.protein})` : ""}`
-        : f.kind;
-  lines.push(`- Class: ${classLabel}`);
-  lines.push(`- Evidence pattern: ${result.pattern}`);
+  const lines = [
+    "## Variant context (private framing — describe the biology in your own words; do NOT echo any of these labels, headers, or any UPPERCASE/snake_case identifiers from the data block)",
+  ];
+  lines.push(`- Variant class: ${describeClass(result.frame)}`);
   lines.push(`- Headline evidence: ${result.headline}`);
   lines.push(`- Supporting evidence: ${result.supporting}`);
   lines.push(
-    `- Interpretation rule: ${result.rule} (apply the matching rule from the instructions)`,
+    `- How to interpret this variant: ${describePattern(result.pattern)}`,
   );
   return lines.join("\n");
 }
