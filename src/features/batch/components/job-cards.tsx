@@ -652,10 +652,9 @@ export function FailedJobCard({
   className,
 }: FailedJobCardProps) {
   const recovery = ERROR_RECOVERY_CONFIG[job.error_code] ?? {
-    title: "Error",
-    description: job.error_message,
-    action: job.retryable ? "retry" : "none",
-    actionLabel: job.retryable ? "Retry Job" : undefined,
+    title: "Job failed",
+    description: "An unexpected error occurred while processing this job.",
+    action: "none",
   };
 
   return (
@@ -692,7 +691,7 @@ export function FailedJobCard({
                 {recovery.title}
               </p>
               <p className="text-sm text-rose-700 mt-1">
-                {job.error_message || recovery.description}
+                {recovery.description}
               </p>
               {job.retryable && (
                 <p className="text-xs text-rose-600 mt-2">

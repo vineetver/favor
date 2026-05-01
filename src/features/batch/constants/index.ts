@@ -189,6 +189,13 @@ export const ERROR_RECOVERY_CONFIG: Record<ErrorCode, ErrorRecoveryConfig> = {
     action: "fix_input",
     actionLabel: "Re-upload File",
   },
+  NO_ROWS_PRODUCED: {
+    title: "No matching variants found",
+    description:
+      "None of the variants in your file could be matched to our database. Common causes: wrong reference build (GRCh37 vs GRCh38), invalid identifier format, or non-human variants. Check a few rows and re-upload.",
+    action: "fix_input",
+    actionLabel: "Re-upload File",
+  },
   ROCKSDB_UNAVAILABLE: {
     title: "Database Unavailable",
     description: "The variant database is temporarily unavailable.",

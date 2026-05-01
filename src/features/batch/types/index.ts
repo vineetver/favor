@@ -65,6 +65,7 @@ export type ErrorCode =
   | "NO_KEY_COLUMN" // No variant IDs found
   | "FILE_TOO_LARGE" // Exceeds size limit
   | "INPUT_NOT_FOUND" // S3 object missing
+  | "NO_ROWS_PRODUCED" // No input variants could be resolved
   | "ROCKSDB_UNAVAILABLE" // Database down
   | "S3_UNAVAILABLE" // Storage down
   | "TIMEOUT" // Exceeded max_runtime_sec
