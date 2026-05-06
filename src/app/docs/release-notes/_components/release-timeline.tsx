@@ -7,6 +7,7 @@ import {
   type Release,
   type ReleaseTag,
 } from "../releases";
+import { ReleaseImageCard } from "./release-image-card";
 
 /* -------------------------------------------------------------------------- */
 /*  Labels                                                                     */
@@ -115,6 +116,21 @@ function ReleaseSection({ release }: { release: Release }) {
           </p>
         )}
       </div>
+
+      {release.images && release.images.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-4">
+          {release.images.map((img) => (
+            <ReleaseImageCard
+              key={img.src}
+              src={img.src}
+              alt={img.alt}
+              width={img.width}
+              height={img.height}
+              caption={img.caption}
+            />
+          ))}
+        </div>
+      )}
 
       {/* ── Changes grouped by area ── */}
       <div className="mt-10 space-y-10 max-w-2xl">

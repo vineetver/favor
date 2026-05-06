@@ -51,7 +51,20 @@ export interface Release {
   summary?: string;
   /** Optional tag for visual emphasis. Defaults to "minor". */
   tag?: ReleaseTag;
+  /**
+   * Optional screenshots rendered as a row of cards below the summary.
+   * Each card opens a lightbox on click.
+   */
+  images?: ReleaseImage[];
   changes: ChangeEntry[];
+}
+
+export interface ReleaseImage {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  caption?: string;
 }
 
 export const AREA_LABEL: Record<ChangeArea, string> = {
@@ -76,6 +89,83 @@ export const AREA_ORDER: ChangeArea[] = [
 ];
 
 export const RELEASES: Release[] = [
+  {
+    version: "2026.05.06",
+    date: "2026-05-06",
+    title: "AlphaGenome predictions",
+    tag: "minor",
+    summary:
+      "Run Google DeepMind's AlphaGenome from the variant and gene pages and view the results inline. Predictions are computed live — first runs take 1–10 minutes, subsequent requests are cached.",
+    images: [
+      {
+        src: "/docs/alphagenome-variant.png",
+        alt: "AlphaGenome scores for rs7412 — High Impact classification with a tissue-by-gene expression-change heatmap across APOC2, APOC4, MARK4, and other nearby genes.",
+        width: 2738,
+        height: 1690,
+        caption: "Variant page → Regulatory → AlphaGenome for rs7412.",
+      },
+    ],
+    changes: [
+      {
+        kind: "added",
+        area: "platform",
+        source: "Variant",
+        navSlug: "alphagenome",
+        text: "Regulatory → AlphaGenome on any variant page scores the variant across seven scorers (regulatory disruption, DNA folding, expression change, gene activation, RNA splicing, RNA processing, splice site) and renders reference vs. alternate signal for CAGE, DNase, ATAC, RNA-seq, ChIP histone, ChIP TF, splicing, and contact maps. Filter by tissue group before predicting tracks.",
+      },
+      {
+        kind: "added",
+        area: "platform",
+        source: "Gene",
+        navSlug: "alphagenome",
+        text: "Cell/Tissue → AlphaGenome on any gene page returns region expression scores. AlphaGenome operates on fixed windows (≥512kb here), so any other gene inside the window also appears as a row in the heatmap — there is no single-gene scorer yet, read the row for your gene.",
+      },
+    ],
+  },
+  {
+    version: "2026.04.29",
+    date: "2026-04-29",
+    title: "Disease and drug pages",
+    tag: "minor",
+    summary:
+      "Every disease and drug now has its own page. Search takes you straight there.",
+    images: [
+      {
+        src: "/docs/disease-page.png",
+        alt: "Acute Myeloid Leukemia disease page — clinical group, ClinGen and GenCC verdicts, prevalence, key phenotypes, and synonyms.",
+        width: 2764,
+        height: 1704,
+        caption: "Disease — Acute Myeloid Leukemia.",
+      },
+      {
+        src: "/docs/drug-page.png",
+        alt: "Metformin drug page — clinical phase, approval year, black box warning, mechanism, and inline 2D structure.",
+        width: 2698,
+        height: 1710,
+        caption: "Drug — Metformin.",
+      },
+    ],
+    changes: [
+      {
+        kind: "added",
+        area: "platform",
+        source: "Disease",
+        text: "Cross-references across MONDO, EFO, OMIM, Orphanet, MeSH, and DOID; clinical group; rare-disease flag; ClinGen and GenCC verdicts; prevalence and incidence; key phenotypes; full list of synonyms. Sections for genes (split into confirmed, implicated, and associated), drugs that treat it, GWAS variants, studies, phenotypes, and parent and sibling diseases — each labelled with how many it has so you know what's there before you open it.",
+      },
+      {
+        kind: "added",
+        area: "platform",
+        source: "Drug",
+        text: "Clinical phase, approval year, FDA flags such as black box warnings, mechanism of action, and the molecule rendered inline. Sections for targets, indications, pharmacogenomics, adverse effects, and drug-drug interactions — each labelled with how many it has so you know what's there before you open it.",
+      },
+      {
+        kind: "fixed",
+        area: "search",
+        source: "Cmd-K",
+        text: "Results are restricted to things that have a real page (genes, variants, diseases, drugs, phenotypes, cCREs). No more clicking a hit and landing somewhere dead.",
+      },
+    ],
+  },
   {
     version: "2026.04.28",
     date: "2026-04-28",
