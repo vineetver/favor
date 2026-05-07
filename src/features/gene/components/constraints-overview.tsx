@@ -38,13 +38,33 @@ function num(v: string | number | null | undefined): number | null {
 
 function fmt(v: string | number | null | undefined, decimals = 4): string {
   const n = num(v);
-  if (n === null) return "\u2014";
+  if (n === null) return "—";
   return n.toFixed(decimals);
 }
 
 function fmtInt(v: number | null | undefined): string {
-  if (v === null || v === undefined || Number.isNaN(v)) return "\u2014";
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
   return Math.round(v).toLocaleString();
+}
+
+const EM_DASH = "—";
+
+// Bucket helpers — published thresholds.
+function lofBucket(pLI: number | null): string {
+  if (pLI === null) return EM_DASH;
+  if (pLI > 0.9) return "High";
+  if (pLI >= 0.5) return "Moderate";
+  return "Low";
+}
+
+function haploBucket(phaplo: number | null): string {
+  if (phaplo === null) return EM_DASH;
+  return phaplo > 0.86 ? "Likely" : "Unlikely";
+}
+
+function triploBucket(ptriplo: number | null): string {
+  if (ptriplo === null) return EM_DASH;
+  return ptriplo > 0.94 ? "Sensitive" : "Tolerant";
 }
 
 // ============================================================================
@@ -64,91 +84,62 @@ function InfoTip({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ScaleBar({ value, max = 1 }: { value: number | null; max?: number }) {
-  if (value === null) return null;
-  const pct = Math.max(0, Math.min(100, (value / max) * 100));
+/** Sub-section strip header — matches the platform pattern used across overview cards. */
+function SectionStrip({ title, source }: { title: string; source?: string }) {
   return (
-    <div className="h-1 w-full rounded-full bg-muted overflow-hidden mt-1">
-      <div
-        className="h-full rounded-full bg-primary/60 transition-all duration-500"
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
-}
-
-/** Single metric: label + value + optional bar */
-function Metric({
-  label,
-  value,
-  help,
-  bar,
-  barMax = 1,
-}: {
-  label: string;
-  value: string | number | null | undefined;
-  help?: string;
-  bar?: boolean;
-  barMax?: number;
-}) {
-  const n = num(value);
-  const display = typeof value === "string" ? value : fmt(value, 4);
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] text-muted-foreground">{label}</span>
-        {help && <InfoTip>{help}</InfoTip>}
-      </div>
-      <div className="text-sm font-semibold font-mono tabular-nums text-foreground">
-        {display}
-      </div>
-      {bar && <ScaleBar value={n} max={barMax} />}
-    </div>
-  );
-}
-
-/** Row in the definition-list style table */
-function MetricRow({
-  label,
-  value,
-  help,
-  isEven,
-}: {
-  label: string;
-  value: string;
-  help?: string;
-  isEven: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "px-6 py-3 grid grid-cols-[minmax(200px,280px)_1fr] gap-8 items-baseline",
-        isEven ? "bg-transparent" : "bg-muted/30",
+    <div className="flex items-center justify-between border-b border-border bg-muted/60 px-6 py-1.5">
+      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        {title}
+      </span>
+      {source && (
+        <span className="text-[11px] font-medium text-muted-foreground">
+          {source}
+        </span>
       )}
-    >
-      <dt className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        {help && <InfoTip>{help}</InfoTip>}
-      </dt>
-      <dd className="text-sm font-mono text-foreground tabular-nums">
-        {value}
-      </dd>
     </div>
   );
 }
 
-/** O/E bar visualization */
+/** Verdict block: small label, bucket word, secondary detail. Pure type. */
+function Verdict({
+  label,
+  bucket,
+  detail,
+  help,
+}: {
+  label: string;
+  bucket: string;
+  detail: string;
+  help?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          {label}
+        </span>
+        {help && <InfoTip>{help}</InfoTip>}
+      </div>
+      <div className="text-base font-semibold text-foreground">{bucket}</div>
+      <div className="text-xs text-muted-foreground tabular-nums">{detail}</div>
+    </div>
+  );
+}
+
+/** O/E ratio bar (0–2 scale, 1.0 baseline, optional CI band). */
 function OEBar({
   label,
   oe,
   lower,
   upper,
+  meta,
   help,
 }: {
   label: string;
   oe: number | null;
   lower: number | null;
   upper: number | null;
+  meta?: string;
   help?: string;
 }) {
   const scale = 2.0;
@@ -161,12 +152,12 @@ function OEBar({
           {help && <InfoTip>{help}</InfoTip>}
         </div>
         <span className="text-sm font-mono text-foreground tabular-nums">
-          {oe != null ? oe.toFixed(4) : "\u2014"}
+          {oe != null ? oe.toFixed(4) : EM_DASH}
         </span>
       </div>
-      <div className="relative h-2.5 w-full rounded-full bg-muted overflow-hidden">
+      <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
         <div
-          className="absolute top-0 bottom-0 w-px bg-muted-foreground/30"
+          className="absolute top-0 bottom-0 w-px bg-foreground/30"
           style={{ left: `${toPct(1)}%` }}
         />
         {lower != null && upper != null && (
@@ -180,37 +171,101 @@ function OEBar({
         )}
         {oe != null && (
           <div
-            className="absolute top-0 h-2.5 w-1.5 rounded-full bg-primary"
+            className="absolute top-0 h-2 w-1.5 rounded-full bg-primary"
             style={{ left: `${toPct(oe)}%`, transform: "translateX(-50%)" }}
           />
         )}
+      </div>
+      {meta && (
+        <div className="text-xs text-muted-foreground tabular-nums">{meta}</div>
+      )}
+    </div>
+  );
+}
+
+/** Threshold-aware probability bar (0–1 scale, threshold notch, fill flips). */
+function ThresholdBar({
+  label,
+  value,
+  threshold,
+  thresholdLabel,
+  help,
+}: {
+  label: string;
+  value: number;
+  threshold: number;
+  thresholdLabel?: string;
+  help?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, value * 100));
+  const thrPct = Math.max(0, Math.min(100, threshold * 100));
+  const above = value >= threshold;
+  return (
+    <div className="grid grid-cols-[140px_auto_1fr] gap-x-6 gap-y-1 items-center">
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        {help && <InfoTip>{help}</InfoTip>}
+      </div>
+      <span className="text-sm font-mono tabular-nums text-foreground">
+        {value.toFixed(4)}
+      </span>
+      <div>
+        <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className={cn(
+              "absolute top-0 left-0 h-full rounded-full",
+              above ? "bg-primary" : "bg-muted-foreground/35",
+            )}
+            style={{ width: `${pct}%` }}
+          />
+          <div
+            className="absolute top-0 bottom-0 w-px bg-foreground/40"
+            style={{ left: `${thrPct}%` }}
+          />
+          <div
+            className="absolute top-0 h-2 w-1.5 rounded-full bg-foreground"
+            style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
+          />
+        </div>
+        <div className="relative mt-1 h-3 text-[10px] tabular-nums text-muted-foreground/70">
+          <span className="absolute left-0">0</span>
+          <span
+            className="absolute -translate-x-1/2 whitespace-nowrap"
+            style={{ left: `${thrPct}%` }}
+          >
+            {thresholdLabel ?? `thr ${threshold.toFixed(2)}`}
+          </span>
+          <span className="absolute right-0">1</span>
+        </div>
       </div>
     </div>
   );
 }
 
-function SectionTitle({
-  children,
-  description,
-  badge,
+/** Quiet detail row: label · value · optional source. */
+function DetailRow({
+  label,
+  value,
+  source,
+  help,
 }: {
-  children: React.ReactNode;
-  description?: string;
-  badge?: string;
+  label: string;
+  value: string;
+  source?: string;
+  help?: string;
 }) {
   return (
-    <div className="px-6 py-4 border-t border-border">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-foreground">
-          {children}
-        </span>
-        {badge && (
-          <span className="text-[10px] text-muted-foreground/50">{badge}</span>
-        )}
+    <div className="grid grid-cols-[1fr_auto_120px] items-baseline gap-x-6 py-2.5">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate text-sm text-muted-foreground">{label}</span>
+        {help && <InfoTip>{help}</InfoTip>}
       </div>
-      {description && (
-        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      )}
+      <span className="whitespace-nowrap font-mono text-sm tabular-nums text-foreground">
+        {value}
+      </span>
+      <span className="whitespace-nowrap text-right text-[11px] text-muted-foreground/70">
+        {source ?? ""}
+      </span>
     </div>
   );
 }
@@ -237,329 +292,305 @@ export function ConstraintsOverview({
     );
   }
 
-  // Dosage sensitivity metrics
+  // Headline metrics
+  const pLI = num(gnomad?.gnom_ad_p_li);
+  const pRec = num(gnomad?.gnom_ad_p_rec);
+  const pNull = num(gnomad?.gnom_ad_p_null);
+  const lofOE = num(loeuf?.lof_oe);
   const phaplo = num(posterior?.phaplo);
   const ptriplo = num(posterior?.ptriplo);
   const pHI = num(damage?.p_hi);
   const hiPredScore = num(damage?.hi_pred_score);
   const hiPred = damage?.hi_pred;
   const ghis = num(damage?.ghis);
-  const hasDosage =
-    phaplo !== null ||
-    ptriplo !== null ||
-    pHI !== null ||
-    hiPredScore !== null ||
-    ghis !== null;
+  const shetMean = num(shet?.mean_s_het);
+  const shetLo = num(shet?.s_het_lower_95);
+  const shetHi = num(shet?.s_het_upper_95);
 
-  // pLI model
-  const pLI = num(gnomad?.gnom_ad_p_li);
-  const pRec = num(gnomad?.gnom_ad_p_rec);
-  const pNull = num(gnomad?.gnom_ad_p_null);
-  const hasLofModel = pLI !== null || pRec !== null || pNull !== null;
+  // Verdict detail strings
+  const lofDetailParts: string[] = [];
+  if (pLI !== null) lofDetailParts.push(`pLI ${pLI.toFixed(3)}`);
+  if (lofOE !== null) lofDetailParts.push(`LOEUF ${lofOE.toFixed(2)}`);
+  const lofDetail = lofDetailParts.length
+    ? lofDetailParts.join(" · ")
+    : EM_DASH;
 
-  // Mutational tolerance rows
-  const toleranceRows: Array<{ label: string; value: string; help: string }> =
-    [];
+  const haploDetail =
+    phaplo !== null ? `pHaplo ${phaplo.toFixed(3)} (thr 0.86)` : EM_DASH;
+  const triploDetail =
+    ptriplo !== null ? `pTriplo ${ptriplo.toFixed(3)} (thr 0.94)` : EM_DASH;
+
+  // Section gating
+  const hasOE =
+    !!loeuf &&
+    (lofOE !== null ||
+      num(loeuf.mis_oe) !== null ||
+      num(loeuf.syn_oe) !== null);
+  const hasDosage = phaplo !== null || ptriplo !== null;
+  const hasSelection =
+    shetMean !== null || pLI !== null || pRec !== null || pNull !== null;
+
+  // Detailed metrics — flat, ordered list of (label, value, source?, help?)
+  type Row = { label: string; value: string; source?: string; help?: string };
+  const detail: Row[] = [];
+  if (pHI !== null)
+    detail.push({
+      label: "P(HI)",
+      value: pHI.toFixed(4),
+      source: "Huang '10",
+      help: "Probability of haploinsufficiency (Huang et al. 2010).",
+    });
+  if (hiPredScore !== null)
+    detail.push({
+      label: "HIPred score",
+      value: hiPredScore.toFixed(4),
+      source: "Shihab '17",
+      help: "ML haploinsufficiency score (Shihab et al. 2017).",
+    });
+  if (hiPred != null && hiPred !== "")
+    detail.push({
+      label: "HIPred call",
+      value: /^(Y|Yes|true)$/i.test(hiPred) ? "Yes" : "No",
+      source: "Shihab '17",
+      help: "Binary call from the HIPred model.",
+    });
+  if (ghis !== null)
+    detail.push({
+      label: "GHIS",
+      value: ghis.toFixed(4),
+      help: "Gene Haploinsufficiency Score. Higher = more likely haploinsufficient.",
+    });
   if (damage) {
-    if (num(damage.rvis_evs) !== null)
-      toleranceRows.push({
+    const rvisEvs = num(damage.rvis_evs);
+    const rvisEvsPct = num(damage.rvis_percentile_evs);
+    if (rvisEvs !== null) {
+      const pctSuffix =
+        rvisEvsPct !== null ? ` · pct ${rvisEvsPct.toFixed(1)}` : "";
+      detail.push({
         label: "RVIS (EVS)",
-        value: fmt(damage.rvis_evs, 4),
-        help: "Residual Variation Intolerance Score. More negative = less functional variation than expected.",
+        value: `${rvisEvs.toFixed(4)}${pctSuffix}`,
+        help: "Residual Variation Intolerance Score (EVS). More negative = less variation than expected.",
       });
-    if (num(damage.rvis_percentile_evs) !== null)
-      toleranceRows.push({
-        label: "RVIS Percentile (EVS)",
-        value: fmt(damage.rvis_percentile_evs, 4),
-        help: "Percentile rank of RVIS across all genes.",
-      });
-    if (num(damage.rvis_ex_ac) !== null)
-      toleranceRows.push({
+    }
+    const rvisExac = num(damage.rvis_ex_ac);
+    const rvisExacPct = num(damage.rvis_percentile_ex_ac);
+    if (rvisExac !== null) {
+      const pctSuffix =
+        rvisExacPct !== null ? ` · pct ${rvisExacPct.toFixed(1)}` : "";
+      detail.push({
         label: "RVIS (ExAC)",
-        value: fmt(damage.rvis_ex_ac, 4),
+        value: `${rvisExac.toFixed(4)}${pctSuffix}`,
         help: "ExAC-based RVIS using MAF filter at 0.05%.",
       });
-    if (num(damage.rvis_percentile_ex_ac) !== null)
-      toleranceRows.push({
-        label: "RVIS Percentile (ExAC)",
-        value: fmt(damage.rvis_percentile_ex_ac, 4),
-        help: "Genome-wide percentile for ExAC RVIS.",
-      });
-    if (num(damage.lo_f_fdr_ex_ac) !== null)
-      toleranceRows.push({
-        label: "LoF FDR (ExAC)",
-        value: fmt(damage.lo_f_fdr_ex_ac, 4),
-        help: "FDR p-value for LoF variant depletion.",
-      });
-    if (num(damage.p_rec) !== null)
-      toleranceRows.push({
-        label: "P(Rec)",
-        value: fmt(damage.p_rec, 4),
-        help: "Probability of being a recessive disease gene.",
-      });
+    }
     if (num(damage.gdi) !== null)
-      toleranceRows.push({
+      detail.push({
         label: "GDI",
         value: fmt(damage.gdi, 4),
         help: "Gene Damage Index. Higher = more accumulated damage in the population.",
       });
     if (num(damage.gdi_phred) !== null)
-      toleranceRows.push({
+      detail.push({
         label: "GDI (Phred)",
         value: fmt(damage.gdi_phred, 4),
         help: "Phred-scaled GDI for cross-gene comparison.",
       });
-    if (num(damage.ex_ac_del_score) !== null)
-      toleranceRows.push({
-        label: "ExAC Del Score",
-        value: fmt(damage.ex_ac_del_score, 4),
-        help: "Deletion intolerance from ExAC structural variants.",
-      });
-    if (num(damage.ex_ac_dup_score) !== null)
-      toleranceRows.push({
-        label: "ExAC Dup Score",
-        value: fmt(damage.ex_ac_dup_score, 4),
-        help: "Duplication intolerance from ExAC structural variants.",
-      });
-    if (num(damage.ex_ac_cnv_score) !== null)
-      toleranceRows.push({
-        label: "ExAC CNV Score",
-        value: fmt(damage.ex_ac_cnv_score, 4),
-        help: "Combined CNV intolerance from ExAC.",
-      });
-  }
-  if (shet) {
-    const mean = num(shet.mean_s_het);
-    const lo = num(shet.s_het_lower_95);
-    const hi = num(shet.s_het_upper_95);
-    if (mean !== null) {
-      const ci =
-        lo !== null && hi !== null
-          ? ` (95% CI: ${lo.toFixed(4)} – ${hi.toFixed(4)})`
-          : "";
-      toleranceRows.push({
-        label: "S(Het)",
-        value: `${mean.toFixed(4)}${ci}`,
-        help: "Selection coefficient against heterozygous LoF carriers.",
+
+    const del = num(damage.ex_ac_del_score);
+    const dup = num(damage.ex_ac_dup_score);
+    const cnv = num(damage.ex_ac_cnv_score);
+    if (del !== null || dup !== null || cnv !== null) {
+      const fmtOrDash = (v: number | null) =>
+        v !== null ? v.toFixed(4) : EM_DASH;
+      detail.push({
+        label: "ExAC Del / Dup / CNV",
+        value: `${fmtOrDash(del)} / ${fmtOrDash(dup)} / ${fmtOrDash(cnv)}`,
+        help: "Structural-variant intolerance from ExAC.",
       });
     }
+    if (num(damage.lo_f_fdr_ex_ac) !== null)
+      detail.push({
+        label: "LoF FDR (ExAC)",
+        value: fmt(damage.lo_f_fdr_ex_ac, 4),
+        help: "FDR p-value for LoF variant depletion.",
+      });
+    if (num(damage.p_rec) !== null)
+      detail.push({
+        label: "P(Rec)",
+        value: fmt(damage.p_rec, 4),
+        help: "Probability of being a recessive disease gene.",
+      });
   }
+
+  // O/E meta-line builders
+  const oeMeta = (
+    obs: number | null | undefined,
+    exp: number | null | undefined,
+    statLabel: string,
+    stat: number | null | undefined,
+    ciLo?: number | null,
+    ciHi?: number | null,
+  ) => {
+    const parts: string[] = [];
+    if (ciLo != null && ciHi != null)
+      parts.push(`90% CI ${ciLo.toFixed(2)} – ${ciHi.toFixed(2)}`);
+    if (obs != null && exp != null)
+      parts.push(`${fmtInt(obs)} obs / ${exp.toFixed(1)} exp`);
+    if (stat != null) parts.push(`${statLabel} ${stat.toFixed(2)}`);
+    return parts.join("  ·  ");
+  };
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Card
-        className={cn(
-          "border border-border py-0 gap-0 overflow-hidden",
-          className,
-        )}
-      >
+      <Card className={cn("border border-border py-0 gap-0", className)}>
         <CardHeader className="border-b border-border px-6 py-4">
-          <CardTitle className="text-sm font-semibold text-foreground">
-            Constraints & Haploinsufficiency
-          </CardTitle>
+          <div className="flex items-start justify-between gap-6">
+            <div className="space-y-0.5">
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Constraints &amp; Haploinsufficiency
+              </CardTitle>
+              <div className="text-sm text-muted-foreground">
+                Population-level signals of how this gene tolerates variation.
+              </div>
+            </div>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0!">
-          {/* ── O/E Ratios ── */}
-          {loeuf && (
+          {/* Constraint profile */}
+          <SectionStrip title="Constraint profile" />
+          <div className="px-6 py-5">
+            <div className="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-3">
+              <Verdict
+                label="LoF intolerance"
+                bucket={lofBucket(pLI)}
+                detail={lofDetail}
+                help="Combines pLI (probability of LoF intolerance) and LOEUF (observed/expected LoF). pLI > 0.9 = highly intolerant."
+              />
+              <Verdict
+                label="Haploinsufficiency"
+                bucket={haploBucket(phaplo)}
+                detail={haploDetail}
+                help="Posterior probability the gene is haploinsufficient. Threshold: pHaplo > 0.86."
+              />
+              <Verdict
+                label="Triplosensitivity"
+                bucket={triploBucket(ptriplo)}
+                detail={triploDetail}
+                help="Posterior probability the gene is triplosensitive. Threshold: pTriplo > 0.94."
+              />
+            </div>
+          </div>
+
+          {/* Observed vs expected */}
+          {hasOE && loeuf && (
             <>
-              <SectionTitle
-                badge="gnomAD"
-                description="How many variants are observed vs. expected. Ratio below 1.0 means the gene is depleted for that variant class."
-              >
-                Observed / Expected Ratios
-              </SectionTitle>
-              <div className="px-6 py-5 space-y-4">
+              <SectionStrip title="Observed vs expected" source="gnomAD v4" />
+              <div className="space-y-5 px-6 py-5">
                 <OEBar
                   label="Loss-of-Function"
                   oe={loeuf.lof_oe}
                   lower={loeuf.lof_oe_ci_lower}
                   upper={loeuf.lof_oe_ci_upper}
                   help="Observed/expected LoF variants. Band = 90% CI. Line at 1.0 = baseline."
+                  meta={oeMeta(
+                    loeuf.lof_obs,
+                    loeuf.lof_exp,
+                    "pLI",
+                    loeuf.lof_pLI,
+                    loeuf.lof_oe_ci_lower,
+                    loeuf.lof_oe_ci_upper,
+                  )}
                 />
                 <OEBar
                   label="Missense"
                   oe={loeuf.mis_oe}
                   lower={null}
                   upper={null}
+                  meta={oeMeta(
+                    loeuf.mis_obs,
+                    loeuf.mis_exp,
+                    "Z",
+                    loeuf.mis_z_score,
+                  )}
                 />
                 <OEBar
                   label="Synonymous"
                   oe={loeuf.syn_oe}
                   lower={null}
                   upper={null}
+                  meta={oeMeta(
+                    loeuf.syn_obs,
+                    loeuf.syn_exp,
+                    "Z",
+                    loeuf.syn_z_score,
+                  )}
                 />
-
-                <div className="grid grid-cols-3 gap-x-8 gap-y-2 pt-3 border-t border-border/60">
-                  {(
-                    [
-                      {
-                        label: "LoF",
-                        obs: loeuf.lof_obs,
-                        exp: loeuf.lof_exp,
-                        stat: loeuf.lof_pLI,
-                        statLabel: "pLI",
-                      },
-                      {
-                        label: "Missense",
-                        obs: loeuf.mis_obs,
-                        exp: loeuf.mis_exp,
-                        stat: loeuf.mis_z_score,
-                        statLabel: "Z",
-                      },
-                      {
-                        label: "Synonymous",
-                        obs: loeuf.syn_obs,
-                        exp: loeuf.syn_exp,
-                        stat: loeuf.syn_z_score,
-                        statLabel: "Z",
-                      },
-                    ] as const
-                  ).map((item) => (
-                    <div key={item.label} className="space-y-1">
-                      <div className="text-[11px] text-muted-foreground">
-                        {item.label}
-                      </div>
-                      <div className="grid grid-cols-[auto_1fr] gap-x-3 text-[13px]">
-                        <span className="text-muted-foreground">Obs</span>
-                        <span className="font-mono tabular-nums text-foreground">
-                          {fmtInt(item.obs)}
-                        </span>
-                        <span className="text-muted-foreground">Exp</span>
-                        <span className="font-mono tabular-nums text-foreground">
-                          {item.exp != null ? item.exp.toFixed(1) : "\u2014"}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {item.statLabel}
-                        </span>
-                        <span className="font-mono tabular-nums text-foreground">
-                          {item.stat != null ? item.stat.toFixed(4) : "\u2014"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </>
           )}
 
-          {/* ── Dosage Sensitivity ── */}
+          {/* Dosage sensitivity */}
           {hasDosage && (
             <>
-              <SectionTitle description="How sensitive this gene is to gaining or losing a copy. Higher scores mean the gene is less tolerant of dosage changes.">
-                Dosage Sensitivity
-              </SectionTitle>
-              <div className="px-6 py-5">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4">
-                  {phaplo !== null && (
-                    <Metric
-                      label="pHaplo"
-                      value={phaplo}
-                      bar
-                      help="Posterior probability of haploinsufficiency. Threshold: > 0.86."
-                    />
-                  )}
-                  {ptriplo !== null && (
-                    <Metric
-                      label="pTriplo"
-                      value={ptriplo}
-                      bar
-                      help="Posterior probability of triplosensitivity. Threshold: > 0.94."
-                    />
-                  )}
-                  {pHI !== null && (
-                    <Metric
-                      label="P(HI)"
-                      value={pHI}
-                      bar
-                      help="Probability of haploinsufficiency (Huang et al. 2010)."
-                    />
-                  )}
-                  {hiPredScore !== null && (
-                    <Metric
-                      label="HIPred Score"
-                      value={hiPredScore}
-                      bar
-                      help="ML haploinsufficiency score (Shihab et al. 2017)."
-                    />
-                  )}
-                  {hiPred != null && hiPred !== "" && (
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-muted-foreground">
-                          HIPred
-                        </span>
-                        <InfoTip>Binary call from the HIPred model.</InfoTip>
-                      </div>
-                      <div className="text-sm font-semibold text-foreground">
-                        {/^(Y|Yes|true)$/i.test(hiPred) ? "Yes" : "No"}
-                      </div>
-                    </div>
-                  )}
-                  {ghis !== null && (
-                    <Metric
-                      label="GHIS"
-                      value={ghis}
-                      bar
-                      help="Gene Haploinsufficiency Score. Higher = more likely haploinsufficient."
-                    />
-                  )}
-                </div>
+              <SectionStrip title="Dosage sensitivity" source="Collins '22" />
+              <div className="space-y-5 px-6 py-5">
+                {phaplo !== null && (
+                  <ThresholdBar
+                    label="pHaplo"
+                    value={phaplo}
+                    threshold={0.86}
+                    help="Posterior probability the gene is haploinsufficient (loss of one copy)."
+                  />
+                )}
+                {ptriplo !== null && (
+                  <ThresholdBar
+                    label="pTriplo"
+                    value={ptriplo}
+                    threshold={0.94}
+                    help="Posterior probability the gene is triplosensitive (gain of one copy)."
+                  />
+                )}
               </div>
             </>
           )}
 
-          {/* ── LoF Intolerance Model ── */}
-          {hasLofModel && (
+          {/* Selection */}
+          {hasSelection && (
             <>
-              <SectionTitle
-                badge="gnomAD 2.1"
-                description="Probabilistic model for how this gene responds to loss-of-function variants. High pLI means the gene is intolerant to LoF."
-              >
-                LoF Intolerance Model
-              </SectionTitle>
-              <div className="px-6 py-5">
-                <div className="grid grid-cols-3 gap-x-8">
-                  <Metric
-                    label="pLI"
-                    value={pLI}
-                    bar
-                    help="Probability gene cannot tolerate any LoF. Threshold: > 0.9."
+              <SectionStrip title="Selection" source="gnomAD 2.1 · S(Het)" />
+              <div className="divide-y divide-border/60 px-6">
+                {shetMean !== null && (
+                  <DetailRow
+                    label="S(Het)"
+                    value={
+                      shetLo !== null && shetHi !== null
+                        ? `${shetMean.toFixed(4)}   95% CI ${shetLo.toFixed(2)} – ${shetHi.toFixed(2)}`
+                        : shetMean.toFixed(4)
+                    }
+                    help="Selection coefficient against heterozygous LoF carriers. Higher ⇒ stronger purifying selection."
                   />
-                  <Metric
-                    label="pRec"
-                    value={pRec}
-                    bar
-                    help="Probability gene tolerates het LoF but not hom LoF."
+                )}
+                {(pLI !== null || pRec !== null || pNull !== null) && (
+                  <DetailRow
+                    label="pLI / pRec / pNull"
+                    value={`${pLI !== null ? pLI.toFixed(3) : EM_DASH} / ${pRec !== null ? pRec.toFixed(3) : EM_DASH} / ${pNull !== null ? pNull.toFixed(3) : EM_DASH}`}
+                    help="LoF-intolerance probabilities (sum to 1) from the gnomAD constraint model."
                   />
-                  <Metric
-                    label="pNull"
-                    value={pNull}
-                    bar
-                    help="Probability gene tolerates LoF without major fitness effect."
-                  />
-                </div>
+                )}
               </div>
             </>
           )}
 
-          {/* ── Mutational Tolerance ── */}
-          {toleranceRows.length > 0 && (
+          {/* Detailed metrics */}
+          {detail.length > 0 && (
             <>
-              <SectionTitle description="Population-level measures of how much functional variation this gene tolerates.">
-                Mutational Tolerance & Selection
-              </SectionTitle>
-              <dl>
-                {toleranceRows.map((row, i) => (
-                  <MetricRow
-                    key={row.label}
-                    label={row.label}
-                    value={row.value}
-                    help={row.help}
-                    isEven={i % 2 === 0}
-                  />
+              <SectionStrip title="Detailed metrics" />
+              <div className="divide-y divide-border/60 px-6">
+                {detail.map((row) => (
+                  <DetailRow key={row.label} {...row} />
                 ))}
-              </dl>
+              </div>
             </>
           )}
         </CardContent>
