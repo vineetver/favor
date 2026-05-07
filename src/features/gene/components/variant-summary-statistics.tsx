@@ -1293,13 +1293,14 @@ export function VariantSummaryStatistics({
 
       {scope.kind === "region" && (
         <p className="-mt-3 text-xs text-muted-foreground">
-          Counts above are estimates from sampled bins. For exact values, open{" "}
+          Region counts above are estimates from sampled bins; gene pages and{" "}
           <Link
             href={buildExplorerHref(scope, {})}
             className="text-primary hover:underline"
           >
-            Variant Explorer →
-          </Link>
+            Variant Explorer
+          </Link>{" "}
+          return exact values.
         </p>
       )}
 
