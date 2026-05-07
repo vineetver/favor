@@ -1291,6 +1291,18 @@ export function VariantSummaryStatistics({
         />
       </div>
 
+      {scope.kind === "region" && (
+        <p className="-mt-3 text-xs text-muted-foreground">
+          Counts above are estimates from sampled bins. For exact values, open{" "}
+          <Link
+            href={buildExplorerHref(scope, {})}
+            className="text-primary hover:underline"
+          >
+            Variant Explorer →
+          </Link>
+        </p>
+      )}
+
       {/* Where + Frequency */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard
