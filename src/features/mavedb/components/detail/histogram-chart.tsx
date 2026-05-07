@@ -232,8 +232,8 @@ export function HistogramChart({ bins, bands }: HistogramChartProps) {
           <Bar
             dataKey="count"
             fillOpacity={0.85}
-            onClick={(_data, _idx, e) => {
-              const payload = (e as { payload?: ChartRow } | undefined)
+            onClick={(data) => {
+              const payload = (data as { payload?: ChartRow } | undefined)
                 ?.payload;
               if (payload) onBarClick(payload);
             }}
@@ -297,6 +297,9 @@ function HistogramTooltip({
       )}
       <p className="tabular-nums text-foreground">
         {row.count.toLocaleString()} variant{row.count === 1 ? "" : "s"} in bin
+      </p>
+      <p className="text-[10px] text-muted-foreground">
+        Click to filter the variants table
       </p>
     </div>
   );

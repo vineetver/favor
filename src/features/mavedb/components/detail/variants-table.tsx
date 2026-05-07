@@ -2,6 +2,7 @@
 
 import { Dash } from "@shared/components/ui/dash";
 import { DataSurface } from "@shared/components/ui/data-surface/data-surface";
+import { Spinner } from "@shared/components/ui/spinner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useScoresetVariants } from "../../hooks/use-scoreset-variants";
@@ -190,8 +191,10 @@ export function VariantsTable({
     [bands],
   );
 
+  const filterActive = scoreMin != null || scoreMax != null;
+
   const activeBand = useMemo(() => {
-    if (scoreMin == null && scoreMax == null) return null;
+    if (!filterActive) return null;
     return (
       bands.find(
         (b) =>
@@ -199,11 +202,25 @@ export function VariantsTable({
           (b.range_high ?? null) === scoreMax,
       ) ?? null
     );
-  }, [bands, scoreMin, scoreMax]);
+  }, [bands, scoreMin, scoreMax, filterActive]);
 
-  const subtitle = activeBand
+  const formatBound = (v: number | null | undefined) =>
+    v == null ? "−∞" : v.toFixed(2);
+  const subtitleText = activeBand
     ? `Variants in ${activeBand.display_label}`
-    : `${totalVariants.toLocaleString()} variants`;
+    : filterActive
+      ? `Variants with score ${formatBound(scoreMin)} to ${formatBound(scoreMax)}`
+      : `${totalVariants.toLocaleString()} variants`;
+
+  const isRefetching = isFetching && rows.length > 0;
+  const subtitle = isRefetching ? (
+    <span className="inline-flex items-center gap-1.5">
+      <Spinner className="size-3 text-primary" aria-hidden />
+      <span>Filtering… {subtitleText}</span>
+    </span>
+  ) : (
+    subtitleText
+  );
 
   return (
     <section>
@@ -219,7 +236,7 @@ export function VariantsTable({
         exportFilename={`mavedb-variants-${urn}`}
         pageSizeOptions={[25, 50, 100, 200]}
         serverPagination={{
-          totalCount: activeBand ? undefined : totalVariants,
+          totalCount: filterActive ? undefined : totalVariants,
           pageSize,
           hasMore: hasNext,
           onNextPage: next,

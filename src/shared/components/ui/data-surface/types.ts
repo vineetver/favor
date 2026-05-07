@@ -111,7 +111,7 @@ export interface DataSurfaceProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   title?: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
   headerActions?: React.ReactNode;
   searchPlaceholder?: string;
@@ -166,7 +166,7 @@ export interface DataSurfaceProps<TData, TValue> {
 
 export interface ContextHeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
   actions?: React.ReactNode;
 }

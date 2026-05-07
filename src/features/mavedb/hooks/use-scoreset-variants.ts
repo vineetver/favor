@@ -39,8 +39,16 @@ export function useScoresetVariants({
     setCursors([undefined]);
   }, [filterKey]);
 
+  // Only seed SSR data on the unfiltered first page. Reusing `initialData` for
+  // filtered queries would have React Query treat the unfiltered rows as the
+  // fresh result for the filtered key (staleTime 5 min) and skip the refetch.
+  const filtersEmpty =
+    !filters?.q && filters?.score_min == null && filters?.score_max == null;
   const seedable =
-    pageIndex === 0 && initialData && initialData.data.length > 0
+    pageIndex === 0 &&
+    filtersEmpty &&
+    initialData &&
+    initialData.data.length > 0
       ? initialData
       : undefined;
 

@@ -261,7 +261,7 @@ function BandLegend({
 
   if (bands.length === 0) return null;
 
-  const anyActive = bands.some((b) => bandMatches(b, state.smin, state.smax));
+  const filterActive = state.smin != null || state.smax != null;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -302,14 +302,16 @@ function BandLegend({
             </li>
           );
         })}
-        {anyActive && (
+        {filterActive && (
           <li>
             <button
               type="button"
               onClick={() => set({ smin: null, smax: null })}
-              className="inline-flex items-center rounded-md border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              title="Clear score filter"
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
             >
-              Clear
+              <span aria-hidden>×</span>
+              Clear filter
             </button>
           </li>
         )}
