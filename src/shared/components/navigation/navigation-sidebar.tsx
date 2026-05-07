@@ -120,14 +120,21 @@ export function NavigationSidebar({
   const params = useParams();
   const pathname = usePathname();
 
-  // Derived: current active slug from URL
+  // Derived: current active slug from URL.
+  // Prefer the segment directly after `basePath` so deep pages (e.g.
+  // `/{base}/mave/[urn]`) still resolve to the parent subcategory `mave`,
+  // not the trailing dynamic segment.
   const activeSlug = useMemo(() => {
     const subcategory = params.subcategory as string | undefined;
     if (subcategory) return subcategory;
-    // Fallback: extract from pathname
+    if (pathname.startsWith(basePath)) {
+      const tail = pathname.slice(basePath.length).replace(/^\/+/, "");
+      const next = tail.split("/")[0];
+      if (next) return decodeURIComponent(next);
+    }
     const segments = pathname.split("/");
-    return segments[segments.length - 1];
-  }, [params.subcategory, pathname]);
+    return decodeURIComponent(segments[segments.length - 1] ?? "");
+  }, [params.subcategory, pathname, basePath]);
 
   // Early return: no content
   if ((!items || items.length === 0) && (!groups || groups.length === 0)) {

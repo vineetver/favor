@@ -8,9 +8,7 @@ import { API_BASE } from "@/config/api";
 import type {
   CrisprRow,
   FetchCrisprParams,
-  FetchMaveParams,
   FetchPerturbSeqParams,
-  MaveRow,
   PerturbSeqRow,
 } from "./types";
 
@@ -30,13 +28,6 @@ export async function fetchCrispr(
   return fetchJson(
     perturbUrl(loc, "crispr", params as Record<string, unknown>),
   );
-}
-
-export async function fetchMave(
-  loc: string,
-  params: FetchMaveParams = {},
-): Promise<PaginatedResponse<MaveRow>> {
-  return fetchJson(perturbUrl(loc, "mave", params as Record<string, unknown>));
 }
 
 export async function fetchPerturbSeq(
@@ -63,6 +54,31 @@ export async function fetchCrisprByTissueGroup(
   return res.data.map((r) => ({
     tissue_name: r.group_key,
     max_value: r.max_value,
+    count: r.count,
+    significant: r.significant ?? 0,
+  }));
+}
+
+export interface CrisprTissueFacet {
+  tissue: string;
+  count: number;
+  significant: number;
+}
+
+/**
+ * Granular tissue facets for CRISPR. Keys (e.g. "lung", "lymphoid tissue",
+ * "central nervous system") are what the `tissue` query parameter expects
+ * when filtering rows.
+ */
+export async function fetchCrisprTissueFacets(
+  loc: string,
+): Promise<CrisprTissueFacet[]> {
+  const url = perturbUrl(loc, "crispr", { group_by: "tissue" });
+  const res = await fetchJson<{
+    data: { group_key: string; count: number; significant?: number }[];
+  }>(url);
+  return res.data.map((r) => ({
+    tissue: r.group_key,
     count: r.count,
     significant: r.significant ?? 0,
   }));

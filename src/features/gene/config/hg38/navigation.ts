@@ -19,6 +19,8 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
         text: "Constraints and Haploinsufficiency",
         slug: "constraints-and-heplo",
       },
+      { text: "Perturbation", slug: "perturbation" },
+      { text: "Variant Effect Maps", slug: "mave" },
 
       { text: "Graph Explorer", slug: "graph-explorer" },
       { text: "Interaction Neighborhood", slug: "interaction-neighborhood" },
@@ -39,10 +41,17 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "Function", slug: "function" },
           { text: "Expression", slug: "expression" },
           { text: "Protein Structure", slug: "protein-structure" },
+        ],
+      },
+      {
+        name: "Functional Evidence",
+        items: [
           {
             text: "Constraints and Haploinsufficiency",
             slug: "constraints-and-heplo",
           },
+          { text: "Perturbation", slug: "perturbation" },
+          { text: "Variant Effect Maps", slug: "mave" },
         ],
       },
       {
@@ -155,7 +164,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
       { text: "QTLs", slug: "qtls" },
       { text: "ChromBPNet", slug: "chrombpnet" },
       { text: "V2F Scores", slug: "tissue-scores" },
-      { text: "Perturbation", slug: "perturbation" },
       { text: "AlphaGenome", slug: "alphagenome" },
     ],
     showIcons: false,
@@ -193,10 +201,6 @@ export const GENE_NAVIGATION_CONFIG: GeneNavigationSection[] = [
           { text: "ChromBPNet", slug: "chrombpnet" },
           { text: "V2F Scores", slug: "tissue-scores" },
         ],
-      },
-      {
-        name: "Perturbation",
-        items: [{ text: "Perturbation", slug: "perturbation" }],
       },
       {
         name: "AI Predictions",

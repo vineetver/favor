@@ -90,6 +90,59 @@ export const AREA_ORDER: ChangeArea[] = [
 
 export const RELEASES: Release[] = [
   {
+    version: "2026.05.07",
+    date: "2026-05-07",
+    title: "Perturbation and MaveDB pages",
+    tag: "minor",
+    summary:
+      "Every gene has a Perturbation tab under Gene Annotation — CRISPR essentiality screens and Perturb-seq downstream/upstream effects from the EBI Perturbation Catalogue, with a KPI strip up top so you see what's there before scrolling. Multiplexed assay of variant effect (MAVE) scores have moved to their own page with the full distribution plotted against the active calibration's LOF / intermediate / functional thresholds.",
+    images: [
+      {
+        src: "/docs/perturbation-kras.png",
+        alt: "KRAS perturbation tab — KPI strip with 1 Perturb-seq dataset, 6 downstream targets, 1,191 CRISPR screens, essential in 618 lines; downstream-effects table with log2 FC, direction, magnitude, adjusted p-value, cell type, and dataset.",
+        width: 2704,
+        height: 1698,
+        caption: "Gene → Gene Annotation → Perturbation for KRAS.",
+      },
+      {
+        src: "/docs/mavedb-brca1.png",
+        alt: "BRCA1 MaveDB scoreset urn:mavedb:00001222-b-2 — 2,271 variants across 5 calibrations, score distribution histogram with LOF, intermediate, and functional regions overlaid from the active calibration.",
+        width: 2702,
+        height: 1630,
+        caption:
+          "Gene → Gene Annotation → Variant Effect Maps → scoreset for BRCA1.",
+      },
+    ],
+    changes: [
+      {
+        kind: "added",
+        area: "platform",
+        source: "Gene Annotation",
+        navSlug: "perturbation",
+        text: "Perturbation tab opens with a KPI strip — Perturb-seq datasets, downstream targets, CRISPR screens, essential-in cell-line count — so you see what's there before scrolling. Data-source caption links out to EBI Perturbation Catalogue and BioGRID ORCS.",
+      },
+      {
+        kind: "added",
+        area: "platform",
+        source: "CRISPR",
+        text: "CRISPR section pulls from BioGRID ORCS — every screen labelled with its perturbation type (CRISPRn knockout, CRISPRi suppression, CRISPRa activation), score type (FDR, Rho, Gamma, gene dependency probability, …) so the number is interpretable, per-row score interpretation on hover, and cell line + tissue + disease in one column. Server-driven filter bar with perturbation-type pills, tissue picker populated from a live facet, and a significant-only toggle — each change refetches against the full 21M-row catalogue rather than narrowing a stale slice.",
+      },
+      {
+        kind: "added",
+        area: "platform",
+        source: "Perturb-seq",
+        text: "Downstream and upstream tables for every gene. Self-perturbations (gene → gene, the experimental positive control) are excluded from the upstream view. Citation hover on the Dataset cell shows study title and year.",
+      },
+      {
+        kind: "added",
+        area: "platform",
+        source: "MaveDB",
+        navSlug: "mave",
+        text: "Multiplexed assay of variant effect scores live on their own page (Gene Annotation → Variant Effect Maps), pulled straight from MaveDB rather than via the perturbation catalogue. Each scoreset gets a dedicated view with the full score distribution as a histogram, the active calibration's LOF / intermediate / functional thresholds shaded in, and a calibration dropdown (IGVF Coding Variant Focus Group controls vs. study-provided cutoffs) that re-bands the histogram in place. URN, variant count, calibration count, and target gene shown in the header; one click opens the scoreset on MaveDB.",
+      },
+    ],
+  },
+  {
     version: "2026.05.06",
     date: "2026-05-06",
     title: "AlphaGenome predictions",

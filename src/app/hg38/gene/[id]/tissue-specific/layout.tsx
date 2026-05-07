@@ -80,13 +80,16 @@ export default async function TissueSpecificLayout({
         </div>
       </div>
 
-      {/* Sub-nav: sits between primary nav and content, visually attached to content */}
+      {/* Sub-nav: sits between primary nav and content, visually attached to content.
+          Perturbation lives under Gene Annotation on gene pages, so we strip the
+          Perturbation group from the Cell/Tissue chip bar. */}
       <div className="max-w-page mx-auto px-6 lg:px-12">
         {summary && (
           <div className="hidden lg:block">
             <RegionNavBar
               summary={summary}
               basePath={`/hg38/gene/${encodeURIComponent(id)}/${category}`}
+              hiddenGroupLabels={["Perturbation"]}
             />
           </div>
         )}

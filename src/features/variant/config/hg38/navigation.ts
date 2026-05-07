@@ -21,6 +21,8 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
       { text: "Protein Structure", slug: "protein-structure" },
       { text: "SpliceAI", slug: "splice-ai" },
       { text: "Conservation", slug: "conservation" },
+      // Functional Evidence
+      { text: "Variant Effect Maps", slug: "mave" },
       // Population Genetics
       { text: "Allele Frequency", slug: "allele-frequency" },
       {
@@ -73,6 +75,11 @@ export const VARIANT_NAVIGATION_CONFIG: VariantNavigationSection[] = [
           { text: "SpliceAI", slug: "splice-ai" },
           { text: "Conservation", slug: "conservation" },
         ],
+      },
+      {
+        name: "Functional Evidence",
+        defaultExpanded: true,
+        items: [{ text: "Variant Effect Maps", slug: "mave" }],
       },
       {
         name: "Population Genetics",

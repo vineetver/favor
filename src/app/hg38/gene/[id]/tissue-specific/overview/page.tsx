@@ -85,6 +85,7 @@ export default async function TissueOverviewPage({
           evidence={evidence}
           summary={summary}
           basePath={`/hg38/gene/${encodeURIComponent(id)}/tissue-specific`}
+          perturbationBasePath={`/hg38/gene/${encodeURIComponent(id)}/gene-level-annotation`}
         />
       </section>
 

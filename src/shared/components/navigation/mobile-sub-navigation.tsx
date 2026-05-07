@@ -35,10 +35,10 @@ export function MobileSubNavigation({
   }
 
   const isActiveItem = (itemSlug: string) => {
-    if (currentSubcategory === itemSlug) {
-      return true;
-    }
-    return pathname.endsWith(`/${itemSlug}`);
+    if (currentSubcategory === itemSlug) return true;
+    if (pathname.endsWith(`/${itemSlug}`)) return true;
+    // Deep page under this subcategory (e.g. `/.../mave/[urn]`).
+    return pathname.includes(`/${itemSlug}/`);
   };
 
   const activeItem = items.find((item) => isActiveItem(item.slug));

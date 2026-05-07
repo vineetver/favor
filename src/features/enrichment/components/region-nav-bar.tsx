@@ -159,6 +159,8 @@ interface RegionNavBarProps {
   summary: RegionSummary;
   basePath: string;
   navGroups?: NavGroup[];
+  /** Group labels to drop from the rendered nav. */
+  hiddenGroupLabels?: string[];
 }
 
 export type { NavGroup, NavItem };
@@ -167,8 +169,12 @@ export function RegionNavBar({
   summary,
   basePath,
   navGroups,
+  hiddenGroupLabels,
 }: RegionNavBarProps) {
-  const groups = navGroups ?? NAV_GROUPS;
+  const baseGroups = navGroups ?? NAV_GROUPS;
+  const groups = hiddenGroupLabels?.length
+    ? baseGroups.filter((g) => !hiddenGroupLabels.includes(g.label ?? ""))
+    : baseGroups;
   const pathname = usePathname();
 
   const activeSlug = useMemo(() => {

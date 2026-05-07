@@ -53,8 +53,14 @@ function formatDate(iso: string): string {
  * clearly looked at the panel.
  */
 export function WhatsNewBell() {
-  const { releases, unreadCount, markSeen, markAllSeen } = useWhatsNew();
+  const { releases, unreadCount, isUnread, markSeen, markAllSeen } =
+    useWhatsNew();
   const [open, setOpen] = useState(false);
+  // Snapshot the unread set when the panel opens so highlights persist
+  // through the open session even after click-marks-seen fires.
+  const [unreadSnapshot, setUnreadSnapshot] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
 
   // SSR + first client render both see unreadCount === 0 (empty seen-set
   // from useSyncExternalStore's getServerSnapshot), so the badge stays
@@ -70,7 +76,15 @@ export function WhatsNewBell() {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) markAllSeen();
+        if (next) {
+          setUnreadSnapshot(
+            new Set(
+              releases.filter((r) => isUnread(r.version)).map((r) => r.version),
+            ),
+          );
+        } else {
+          markAllSeen();
+        }
       }}
     >
       <PopoverTrigger asChild>
@@ -121,6 +135,7 @@ export function WhatsNewBell() {
           )}
           {visible.map((release) => {
             const tag = release.tag ?? "minor";
+            const unread = unreadSnapshot.has(release.version);
             return (
               <Link
                 key={release.version}
@@ -130,12 +145,24 @@ export function WhatsNewBell() {
                   setOpen(false);
                 }}
                 className={cn(
-                  "block px-4 py-3 transition-colors hover:bg-muted/60",
+                  "relative block px-4 py-3 transition-colors hover:bg-muted/60",
+                  unread && "bg-primary/[0.04]",
                 )}
               >
+                {unread && (
+                  <span
+                    aria-hidden
+                    className="absolute left-1.5 top-4 h-1.5 w-1.5 rounded-full bg-primary"
+                  />
+                )}
                 <div className="flex items-baseline justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono text-sm font-semibold text-foreground">
+                    <span
+                      className={cn(
+                        "font-mono text-sm text-foreground",
+                        unread ? "font-bold" : "font-semibold",
+                      )}
+                    >
                       {release.version}
                     </span>
                     <span
@@ -146,12 +173,24 @@ export function WhatsNewBell() {
                     >
                       {TAG_LABEL[tag]}
                     </span>
+                    {unread && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-primary">
+                        New
+                      </span>
+                    )}
                   </div>
                   <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
                     {formatDate(release.date)}
                   </span>
                 </div>
-                <p className="text-sm font-medium text-foreground leading-snug">
+                <p
+                  className={cn(
+                    "text-sm leading-snug",
+                    unread
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-foreground/85",
+                  )}
+                >
                   {release.title}
                 </p>
                 {release.summary && (

@@ -1,6 +1,6 @@
 import {
   fetchCrispr,
-  fetchMave,
+  fetchCrisprTissueFacets,
   fetchPerturbSeq,
 } from "@features/perturbation/api";
 import { PerturbationView } from "@features/perturbation/components/perturbation-view";
@@ -18,12 +18,12 @@ export default async function PerturbationPage({
   const region = parseRegion(loc);
   if (!region) notFound();
 
-  const [downstreamRes, crisprRes, maveRes] = await Promise.all([
+  const [downstreamRes, crisprRes, crisprTissueFacets] = await Promise.all([
     fetchPerturbSeq(region.loc, { significant_only: true, limit: 100 }).catch(
       () => null,
     ),
     fetchCrispr(region.loc, { limit: 100 }).catch(() => null),
-    fetchMave(region.loc, { limit: 100 }).catch(() => null),
+    fetchCrisprTissueFacets(region.loc).catch(() => []),
   ]);
 
   const downstream = (downstreamRes?.data ?? []).sort(
@@ -32,12 +32,10 @@ export default async function PerturbationPage({
   const crispr = (crisprRes?.data ?? []).sort(
     (a, b) => a.score_value - b.score_value,
   );
-  const mave = maveRes?.data ?? [];
 
   const downstreamTotalCount =
     downstreamRes?.page_info?.total_count ?? downstream.length;
   const crisprTotalCount = crisprRes?.page_info?.total_count ?? crispr.length;
-  const maveTotalCount = maveRes?.page_info?.total_count ?? mave.length;
 
   return (
     <PerturbationView
@@ -47,15 +45,13 @@ export default async function PerturbationPage({
         downstreamTargets: downstreamTotalCount,
         crisprScreens: crisprTotalCount,
         essentialIn: crispr.filter((r) => r.is_significant).length,
-        maveScores: maveTotalCount,
       }}
       downstream={downstream}
       upstream={[]}
       crispr={crispr}
-      mave={mave}
       crisprTotalCount={crisprTotalCount}
       downstreamTotalCount={downstreamTotalCount}
-      maveTotalCount={maveTotalCount}
+      crisprTissueFacets={crisprTissueFacets}
     />
   );
 }

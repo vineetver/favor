@@ -11,6 +11,8 @@ interface UseWhatsNew {
   releases: Release[];
   /** Number of releases the user hasn't seen yet. */
   unreadCount: number;
+  /** Whether the given release version is currently unread. */
+  isUnread: (version: string) => boolean;
   /** Whether any unread release contains a change with this navSlug. */
   hasUnreadFor: (navSlug: string) => boolean;
   /** Mark one or more release versions as seen. */
@@ -61,6 +63,8 @@ export function useWhatsNew(): UseWhatsNew {
     [storage, releases],
   );
 
+  const isUnread = (version: string): boolean => !storage.has(version);
+
   const hasUnreadFor = (navSlug: string): boolean =>
     releases.some(
       (r) =>
@@ -70,6 +74,7 @@ export function useWhatsNew(): UseWhatsNew {
   return {
     releases,
     unreadCount,
+    isUnread,
     hasUnreadFor,
     markSeen: storage.add,
     markAllSeen: () => storage.add(releases.map((r) => r.version)),

@@ -625,13 +625,21 @@ function buildColumns(): ColumnDef<TissueEvidence>[] {
 function TissueDetail({
   tissue,
   basePath,
+  perturbationBasePath,
 }: {
   tissue: TissueEvidence;
   basePath: string;
+  perturbationBasePath?: string;
 }) {
   const tg = encodeURIComponent(tissue.tissue_name);
 
-  const cards: { label: string; slug: string; lines: string[] }[] = [];
+  const cards: {
+    label: string;
+    slug: string;
+    lines: string[];
+    /** Optional override for the link's basePath. Falls back to `basePath`. */
+    basePathOverride?: string;
+  }[] = [];
 
   if (tissue.signals)
     cards.push({
@@ -721,6 +729,7 @@ function TissueDetail({
       label: "CRISPR Essentiality",
       slug: "perturbation",
       lines: [`Essential in ${sig} of ${total} cell lines (${pct}%)`],
+      basePathOverride: perturbationBasePath,
     });
   }
 
@@ -749,7 +758,7 @@ function TissueDetail({
               </p>
             ))}
             <Link
-              href={`${basePath}/${c.slug}?tissue_group=${tg}`}
+              href={`${c.basePathOverride ?? basePath}/${c.slug}?tissue_group=${tg}`}
               className="inline-flex items-center gap-0.5 mt-1.5 text-xs text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
@@ -770,9 +779,17 @@ interface Props {
   evidence: TissueEvidenceData;
   summary: RegionSummary | null;
   basePath: string;
+  /** Override basePath for the perturbation card only (e.g. when perturbation
+   * lives outside the current section, like under Gene Annotation on gene pages). */
+  perturbationBasePath?: string;
 }
 
-export function TissueEvidenceSummary({ evidence, summary, basePath }: Props) {
+export function TissueEvidenceSummary({
+  evidence,
+  summary,
+  basePath,
+  perturbationBasePath,
+}: Props) {
   const all = useMemo(() => buildTissueEvidence(evidence), [evidence]);
   const columns = useMemo(() => buildColumns(), []);
 
@@ -802,7 +819,11 @@ export function TissueEvidenceSummary({ evidence, summary, basePath }: Props) {
       exportFilename="tissue-evidence"
       emptyMessage="No tissue-specific regulatory evidence found for this gene."
       renderExpandedRow={(tissue) => (
-        <TissueDetail tissue={tissue} basePath={basePath} />
+        <TissueDetail
+          tissue={tissue}
+          basePath={basePath}
+          perturbationBasePath={perturbationBasePath}
+        />
       )}
     />
   );
