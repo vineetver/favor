@@ -49,22 +49,33 @@ function fmtInt(v: number | null | undefined): string {
 
 const EM_DASH = "—";
 
-// Bucket helpers — published thresholds.
-function lofBucket(pLI: number | null): string {
-  if (pLI === null) return EM_DASH;
-  if (pLI > 0.9) return "High";
-  if (pLI >= 0.5) return "Moderate";
-  return "Low";
+// Bucket helpers — thresholds from upstream sources.
+//   LOEUF: gnomAD docs (Karczewski et al. 2020, Nature) — LOEUF < 0.35 = constrained.
+//          gnomAD's recommended LoF-intolerance metric since v2.1.1; pLI is legacy fallback.
+//   pLI:   Lek et al. 2016, Nature — pLI ≥ 0.9 = LoF-intolerant.
+//   pHaplo / pTriplo: Collins et al. 2022, Cell — 0.86 / 0.94 (high-confidence cutoffs).
+function lofBucket(loeuf: number | null, pLI: number | null): string {
+  if (loeuf !== null) {
+    if (loeuf < 0.35) return "High";
+    if (loeuf < 0.75) return "Moderate";
+    return "Low";
+  }
+  if (pLI !== null) {
+    if (pLI >= 0.9) return "High";
+    if (pLI >= 0.5) return "Moderate";
+    return "Low";
+  }
+  return EM_DASH;
 }
 
 function haploBucket(phaplo: number | null): string {
   if (phaplo === null) return EM_DASH;
-  return phaplo > 0.86 ? "Likely" : "Unlikely";
+  return phaplo >= 0.86 ? "Likely" : "Unlikely";
 }
 
 function triploBucket(ptriplo: number | null): string {
   if (ptriplo === null) return EM_DASH;
-  return ptriplo > 0.94 ? "Sensitive" : "Tolerant";
+  return ptriplo >= 0.94 ? "Sensitive" : "Tolerant";
 }
 
 // ============================================================================
@@ -120,8 +131,12 @@ function Verdict({
         </span>
         {help && <InfoTip>{help}</InfoTip>}
       </div>
-      <div className="text-base font-semibold text-foreground">{bucket}</div>
-      <div className="text-xs text-muted-foreground tabular-nums">{detail}</div>
+      <div className="text-lg font-semibold leading-tight text-foreground">
+        {bucket}
+      </div>
+      <div className="text-[13px] text-muted-foreground tabular-nums">
+        {detail}
+      </div>
     </div>
   );
 }
@@ -146,16 +161,14 @@ function OEBar({
   const toPct = (v: number) => Math.max(0, Math.min(100, (v / scale) * 100));
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm text-muted-foreground">{label}</span>
-          {help && <InfoTip>{help}</InfoTip>}
-        </div>
-        <span className="text-sm font-mono text-foreground tabular-nums">
+      <div className="flex items-baseline gap-3">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        {help && <InfoTip>{help}</InfoTip>}
+        <span className="font-mono text-base tabular-nums text-foreground">
           {oe != null ? oe.toFixed(4) : EM_DASH}
         </span>
       </div>
-      <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className="absolute top-0 bottom-0 w-px bg-foreground/30"
           style={{ left: `${toPct(1)}%` }}
@@ -177,7 +190,9 @@ function OEBar({
         )}
       </div>
       {meta && (
-        <div className="text-xs text-muted-foreground tabular-nums">{meta}</div>
+        <div className="text-[12px] text-muted-foreground tabular-nums">
+          {meta}
+        </div>
       )}
     </div>
   );
@@ -201,16 +216,16 @@ function ThresholdBar({
   const thrPct = Math.max(0, Math.min(100, threshold * 100));
   const above = value >= threshold;
   return (
-    <div className="grid grid-cols-[140px_auto_1fr] gap-x-6 gap-y-1 items-center">
+    <div className="grid grid-cols-[120px_auto_1fr] items-center gap-x-6 gap-y-1">
       <div className="flex items-center gap-1.5">
         <span className="text-sm text-muted-foreground">{label}</span>
         {help && <InfoTip>{help}</InfoTip>}
       </div>
-      <span className="text-sm font-mono tabular-nums text-foreground">
+      <span className="font-mono text-base tabular-nums text-foreground">
         {value.toFixed(4)}
       </span>
       <div>
-        <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
             className={cn(
               "absolute top-0 left-0 h-full rounded-full",
@@ -227,22 +242,21 @@ function ThresholdBar({
             style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
           />
         </div>
-        <div className="relative mt-1 h-3 text-[10px] tabular-nums text-muted-foreground/70">
-          <span className="absolute left-0">0</span>
+        <div className="relative mt-1 h-3 w-full text-[10px] tabular-nums text-muted-foreground/70">
           <span
-            className="absolute -translate-x-1/2 whitespace-nowrap"
-            style={{ left: `${thrPct}%` }}
+            className="absolute whitespace-nowrap"
+            style={{ right: `calc(${100 - thrPct}% + 6px)` }}
           >
             {thresholdLabel ?? `thr ${threshold.toFixed(2)}`}
           </span>
-          <span className="absolute right-0">1</span>
         </div>
       </div>
     </div>
   );
 }
 
-/** Quiet detail row: label · value · optional source. */
+/** Quiet detail row: label and value sit close together on the left;
+ *  optional source is whispered immediately after the value. */
 function DetailRow({
   label,
   value,
@@ -255,17 +269,19 @@ function DetailRow({
   help?: string;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_auto_120px] items-baseline gap-x-6 py-2.5">
+    <div className="grid grid-cols-[200px_1fr] items-baseline gap-x-8 py-2.5">
       <div className="flex min-w-0 items-center gap-1.5">
         <span className="truncate text-sm text-muted-foreground">{label}</span>
         {help && <InfoTip>{help}</InfoTip>}
       </div>
-      <span className="whitespace-nowrap font-mono text-sm tabular-nums text-foreground">
-        {value}
-      </span>
-      <span className="whitespace-nowrap text-right text-[11px] text-muted-foreground/70">
-        {source ?? ""}
-      </span>
+      <div className="flex items-baseline gap-3">
+        <span className="font-mono text-sm tabular-nums text-foreground">
+          {value}
+        </span>
+        {source && (
+          <span className="text-[11px] text-muted-foreground/70">{source}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -463,9 +479,9 @@ export function ConstraintsOverview({
             <div className="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-3">
               <Verdict
                 label="LoF intolerance"
-                bucket={lofBucket(pLI)}
+                bucket={lofBucket(lofOE, pLI)}
                 detail={lofDetail}
-                help="Combines pLI (probability of LoF intolerance) and LOEUF (observed/expected LoF). pLI > 0.9 = highly intolerant."
+                help="Bucketed on LOEUF (gnomAD's recommended LoF-intolerance metric): < 0.35 = high, 0.35–0.75 = moderate, ≥ 0.75 = low. pLI is used as fallback when LOEUF is unavailable."
               />
               <Verdict
                 label="Haploinsufficiency"
