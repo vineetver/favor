@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RELEASES, type Release } from "@/app/docs/release-notes/releases";
 import { useWhatsNewStorage } from "./use-whats-new-storage";
 
@@ -29,12 +29,21 @@ interface UseWhatsNew {
  * users don't see a wall of unread items they have no context for;
  * only versions added *after* their first visit show as unread.
  *
- * SSR/hydration: the underlying storage hook returns an empty set on
- * the server and during the initial client render, so `unreadCount`
- * starts at 0 and updates after hydration. No flag needed.
+ * SSR/hydration: the underlying seen-set comes from localStorage, which
+ * isn't available on the server. To avoid a flash where every release
+ * paints as "new" before localStorage is read, we gate every unread-
+ * derived value on a `hydrated` flag that flips true after the first
+ * client effect. SSR + initial client render both report "all seen"
+ * (no badge, no NewDot, no row highlight); the real state appears once,
+ * post-mount.
  */
 export function useWhatsNew(): UseWhatsNew {
   const storage = useWhatsNewStorage();
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const releases = useMemo(
     () => [...RELEASES].sort((a, b) => b.date.localeCompare(a.date)),
@@ -44,7 +53,7 @@ export function useWhatsNew(): UseWhatsNew {
   // First-visit priming runs once after hydration. Idempotent — if the
   // PRIMED_KEY write fails, the next visit re-primes harmlessly.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!hydrated) return;
     try {
       if (window.localStorage.getItem(PRIMED_KEY)) return;
     } catch {
@@ -56,16 +65,21 @@ export function useWhatsNew(): UseWhatsNew {
     } catch {
       // Quota / disabled — accept that we'll re-prime next visit.
     }
-  }, [storage, releases]);
+  }, [hydrated, storage, releases]);
 
   const unreadCount = useMemo(
-    () => releases.reduce((n, r) => (storage.has(r.version) ? n : n + 1), 0),
-    [storage, releases],
+    () =>
+      hydrated
+        ? releases.reduce((n, r) => (storage.has(r.version) ? n : n + 1), 0)
+        : 0,
+    [hydrated, storage, releases],
   );
 
-  const isUnread = (version: string): boolean => !storage.has(version);
+  const isUnread = (version: string): boolean =>
+    hydrated && !storage.has(version);
 
   const hasUnreadFor = (navSlug: string): boolean =>
+    hydrated &&
     releases.some(
       (r) =>
         !storage.has(r.version) && r.changes.some((c) => c.navSlug === navSlug),

@@ -49,12 +49,11 @@ function formatDate(iso: string): string {
 /**
  * Bell + popover panel listing recent releases. Reads from
  * /docs/release-notes (RELEASES) so there's exactly one source of truth.
- * Mark-all-seen fires on close so the badge clears once the user has
- * clearly looked at the panel.
+ * A release is only marked seen when the user clicks into it — opening
+ * and closing the panel without selecting anything keeps the count.
  */
 export function WhatsNewBell() {
-  const { releases, unreadCount, isUnread, markSeen, markAllSeen } =
-    useWhatsNew();
+  const { releases, unreadCount, isUnread, markSeen } = useWhatsNew();
   const [open, setOpen] = useState(false);
   // Snapshot the unread set when the panel opens so highlights persist
   // through the open session even after click-marks-seen fires.
@@ -82,8 +81,6 @@ export function WhatsNewBell() {
               releases.filter((r) => isUnread(r.version)).map((r) => r.version),
             ),
           );
-        } else {
-          markAllSeen();
         }
       }}
     >
