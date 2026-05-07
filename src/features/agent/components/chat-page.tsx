@@ -41,6 +41,7 @@ import { Sheet, SheetContent, SheetTitle } from "@shared/components/ui/sheet";
 import { Spinner } from "@shared/components/ui/spinner";
 import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import {
+  AlertCircleIcon,
   CopyIcon,
   DnaIcon,
   MessageSquareIcon,
@@ -245,15 +246,20 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
     navigator.clipboard.writeText(textContent);
   }, [message.parts]);
 
-  // Stable fingerprint of tool parts — only changes when a tool is added or its
-  // state transitions (e.g. input-available → output-available), NOT on every
-  // text token during streaming.  This prevents cascading re-renders through
-  // vizSpecs → chart components → ResponsiveContainer resize observer loops.
-  const _toolFingerprint = message.parts
+  // Stable fingerprint over tool parts: their identity, name, and current
+  // state. Crucially this does NOT change when a text token is appended —
+  // depending on `message.parts` directly would invalidate the memo on every
+  // token and cascade through `vizSpecs` into Recharts, which then loops in
+  // componentDidUpdate ("Maximum update depth exceeded").
+  const toolFingerprint = message.parts
     .filter(isToolUIPart)
-    .map((p) => `${getToolName(p)}:${"state" in p ? p.state : ""}`)
+    .map(
+      (p) =>
+        `${"toolCallId" in p ? p.toolCallId : ""}:${getToolName(p)}:${"state" in p ? p.state : ""}`,
+    )
     .join("|");
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: toolFingerprint is the stable signal; depending on message.parts directly recomputes on every streaming token.
   const allToolParts = useMemo(
     () =>
       message.parts.filter(isToolUIPart).map((p) => ({
@@ -264,8 +270,7 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
         input: "input" in p ? p.input : undefined,
         output: "output" in p ? p.output : undefined,
       })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [message.parts.filter],
+    [toolFingerprint],
   );
   const hasToolParts = allToolParts.length > 0;
 
@@ -299,14 +304,15 @@ const ChatMessageRenderer = memo(function ChatMessageRenderer({
   // IMPORTANT: `message` must NOT be a dependency here — it changes on every
   // streaming token, which would produce a new vizSpecs array on every render,
   // bypassing VizSpecPanel memo and triggering Recharts ResizeObserver loops.
+  // _vizSpecs is hydrated once on session load; depending on the full `message`
+  // would recompute on every streaming token and thrash Recharts ResizeObserver.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   const persistedVizSpecs = useMemo(
     () =>
       (message as unknown as Record<string, unknown>)._vizSpecs as
         | VizSpec[]
         | undefined,
-    // message.id is stable for the lifetime of a message — _vizSpecs is set once on load
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [message.id, message],
+    [message.id],
   );
 
   const vizSpecs = useMemo(() => {
@@ -470,7 +476,15 @@ export function ChatPage() {
     dismissPaste,
     newChat,
     loadSession,
+    error,
+    regenerate,
+    clearError,
   } = useAgentChat();
+
+  const handleRetry = useCallback(() => {
+    clearError();
+    regenerate();
+  }, [clearError, regenerate]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -544,6 +558,35 @@ export function ChatPage() {
 
   const dismissPendingSeed = useCallback(() => setPendingSeed(null), []);
 
+  // On mobile the Sheet stays mounted; close it after a sidebar action so the
+  // user lands directly on the chat. Also clear the URL-driven session/seed
+  // markers so a subsequent ?session=<id> for the same id (e.g. browser back)
+  // still triggers a reload, and strip any stale URL session so the URL effect
+  // doesn't immediately re-load whichever session the URL pointed at.
+  const handleSidebarLoadSession = useCallback(
+    (id: string) => {
+      handledSessionRef.current = null;
+      loadSession(id);
+      if (searchParams.toString()) {
+        router.replace(pathname);
+      }
+      setSidebarOpen(false);
+    },
+    [loadSession, router, pathname, searchParams],
+  );
+
+  const handleSidebarNewChat = useCallback(() => {
+    handledSessionRef.current = null;
+    handledSeedRef.current = null;
+    newChat();
+    // Strip ?session=<id>/?seed=<id> so the URL effect doesn't re-hydrate the
+    // session we just dismissed (and so a refresh stays on the empty state).
+    if (searchParams.toString()) {
+      router.replace(pathname);
+    }
+    setSidebarOpen(false);
+  }, [newChat, router, pathname, searchParams]);
+
   return (
     <div className="flex h-full w-full">
       {/* Mobile sidebar (Sheet) */}
@@ -554,8 +597,8 @@ export function ChatPage() {
             <WorkspaceSidebar
               onSendMessage={handleSidebarMessage}
               sessionId={sessionId}
-              onLoadSession={loadSession}
-              onNewChat={newChat}
+              onLoadSession={handleSidebarLoadSession}
+              onNewChat={handleSidebarNewChat}
             />
           </AgentErrorBoundary>
         </SheetContent>
@@ -567,8 +610,8 @@ export function ChatPage() {
           <WorkspaceSidebar
             onSendMessage={handleSidebarMessage}
             sessionId={sessionId}
-            onLoadSession={loadSession}
-            onNewChat={newChat}
+            onLoadSession={handleSidebarLoadSession}
+            onNewChat={handleSidebarNewChat}
           />
         </AgentErrorBoundary>
       </aside>
@@ -595,7 +638,7 @@ export function ChatPage() {
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={newChat}
+              onClick={handleSidebarNewChat}
               className="text-muted-foreground"
             >
               <PlusIcon className="size-4" />
@@ -644,7 +687,7 @@ export function ChatPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={newChat}
+              onClick={handleSidebarNewChat}
               className="gap-1.5 text-muted-foreground hover:text-foreground"
             >
               <PlusIcon className="size-4" />
@@ -652,6 +695,45 @@ export function ChatPage() {
             </Button>
           </div>
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 pt-3"
+          >
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-2.5">
+              <AlertCircleIcon className="size-4 shrink-0 text-destructive mt-0.5" />
+              <div className="min-w-0 flex-1 text-[13px] text-foreground">
+                <p className="font-medium">Something went wrong</p>
+                <p
+                  className="text-muted-foreground truncate"
+                  title={error.message}
+                >
+                  {error.message || "Failed to reach the agent."}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={handleRetry}
+                >
+                  Retry
+                </Button>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="size-7 text-muted-foreground"
+                  onClick={clearError}
+                  title="Dismiss"
+                >
+                  <XIcon className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <AgentErrorBoundary fallbackLabel="Chat error">
           <Conversation className="flex-1">

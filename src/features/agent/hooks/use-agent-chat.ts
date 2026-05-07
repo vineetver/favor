@@ -2,11 +2,13 @@
 
 import { useChat } from "@ai-sdk/react";
 import type { PromptInputMessage } from "@shared/components/ai-elements/prompt-input";
+import { useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { AgentUIMessage } from "../agent";
 import { DEFAULT_SYNTHESIS_MODEL, type SynthesisModelId } from "../lib/models";
 import { createSessionClient, listMessagesClient } from "../lib/session-client";
+import { SESSIONS_KEY } from "./use-sessions";
 
 // ---------------------------------------------------------------------------
 // Variant paste detection
@@ -29,6 +31,7 @@ function countVariantLines(text: string): number {
 // ---------------------------------------------------------------------------
 
 export function useAgentChat() {
+  const queryClient = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const [synthesisModel, setSynthesisModel] = useState<SynthesisModelId>(
@@ -52,10 +55,18 @@ export function useAgentChat() {
     [],
   );
 
-  const { messages, setMessages, sendMessage, status } =
-    useChat<AgentUIMessage>({
-      transport,
-    });
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status,
+    stop,
+    error,
+    regenerate,
+    clearError,
+  } = useChat<AgentUIMessage>({
+    transport,
+  });
 
   const updateSynthesisModel = useCallback((id: SynthesisModelId) => {
     synthesisModelRef.current = id;
@@ -69,23 +80,37 @@ export function useAgentChat() {
   const isSubmitted = status === "submitted";
 
   /** Lazily create a session on first submit. Uses a promise lock. */
-  const ensureSession = useCallback(async (title?: string): Promise<string> => {
-    if (sessionIdRef.current) return sessionIdRef.current;
+  const ensureSession = useCallback(
+    async (title?: string): Promise<string> => {
+      if (sessionIdRef.current) return sessionIdRef.current;
 
-    // If a creation is already in-flight, await it
-    if (sessionPromiseRef.current) return sessionPromiseRef.current;
+      // If a creation is already in-flight, await it
+      if (sessionPromiseRef.current) return sessionPromiseRef.current;
 
-    const promise = createSessionClient(title).then((session) => {
-      const id = session.session_id;
-      sessionIdRef.current = id;
-      setSessionId(id);
-      sessionPromiseRef.current = null;
-      return id;
-    });
+      // Clear the lock on both success and failure — without the catch, a rejected
+      // promise would stay parked in the ref and brick every subsequent submit.
+      const promise = createSessionClient(title).then(
+        (session) => {
+          const id = session.session_id;
+          sessionIdRef.current = id;
+          setSessionId(id);
+          sessionPromiseRef.current = null;
+          // Refresh the sidebar's session list so the new chat appears immediately
+          // instead of waiting out the 30s staleTime in useSessions.
+          queryClient.invalidateQueries({ queryKey: SESSIONS_KEY });
+          return id;
+        },
+        (err) => {
+          sessionPromiseRef.current = null;
+          throw err;
+        },
+      );
 
-    sessionPromiseRef.current = promise;
-    return promise;
-  }, []);
+      sessionPromiseRef.current = promise;
+      return promise;
+    },
+    [queryClient],
+  );
 
   /** Submit from the PromptInput component. */
   const submit = useCallback(
@@ -150,12 +175,18 @@ export function useAgentChat() {
   /** Load an existing session's messages from the backend. */
   const loadSession = useCallback(
     async (id: string) => {
-      sessionIdRef.current = id;
-      setSessionId(id);
+      // Abort any in-flight stream from the prior chat and clear any error
+      // banner that would otherwise persist into the loaded session.
+      stop();
+      clearError();
+      sessionPromiseRef.current = null;
 
+      // Fetch BEFORE swapping messages so the prior conversation stays on
+      // screen during the request — avoids the empty-screen flicker users
+      // would see if we cleared first and then waited on the network.
+      let uiMessages: AgentUIMessage[] = [];
       try {
         const stored = await listMessagesClient(id);
-        const uiMessages: AgentUIMessage[] = [];
         for (const m of stored) {
           try {
             uiMessages.push(JSON.parse(m.content) as AgentUIMessage);
@@ -166,24 +197,31 @@ export function useAgentChat() {
             );
           }
         }
-        setMessages(uiMessages);
       } catch (err) {
         console.error("[useAgentChat] Failed to load session:", err);
-        // Keep the sessionId set so new messages still persist
+        uiMessages = [];
       }
+
+      sessionIdRef.current = id;
+      setSessionId(id);
+      setMessages(uiMessages);
     },
-    [setMessages],
+    [setMessages, stop, clearError],
   );
 
   /** Reset conversation to empty state. */
   const newChat = useCallback(() => {
+    // Abort any in-flight stream so its tokens can't land in the cleared chat,
+    // and dismiss any error banner inherited from the prior conversation.
+    stop();
+    clearError();
     sessionIdRef.current = null;
     sessionPromiseRef.current = null;
     setSessionId(null);
     setMessages([]);
     setPastedVariantCount(0);
     pastedTextRef.current = "";
-  }, [setMessages]);
+  }, [setMessages, stop, clearError]);
 
   return {
     messages,
@@ -201,5 +239,8 @@ export function useAgentChat() {
     dismissPaste,
     newChat,
     loadSession,
+    error,
+    regenerate,
+    clearError,
   } as const;
 }

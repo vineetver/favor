@@ -9,6 +9,8 @@ import { buildSystemPrompt } from "@features/agent/lib/prompts/system";
 import { classifyQuery } from "@features/agent/lib/query-classifier";
 import {
   createAgentUIStreamResponse,
+  getToolName,
+  isToolUIPart,
   stepCountIs,
   ToolLoopAgent,
   type UIMessage,
@@ -97,9 +99,12 @@ export async function POST(req: Request) {
   const { sessionId, synthesisModel } = parsed.data;
   // Zod validates structure; cast to UIMessage[] for AI SDK compatibility
   const messages = parsed.data.messages as unknown as UIMessage[];
-  const effectiveSessionId = sessionId ?? `ephemeral-${Date.now()}`;
+  const effectiveSessionId = sessionId ?? `ephemeral-${crypto.randomUUID()}`;
 
-  // Persist user message (write-ahead) with retry
+  // Persist user message (write-ahead) with retry. We await this before
+  // streaming the assistant response: if the user message fails to persist but
+  // the assistant message succeeds, a reload would show the assistant's reply
+  // floating with no preceding prompt — confusing and corrupts session history.
   {
     const userMsg = [...messages].reverse().find((m) => m.role === "user");
     if (userMsg) {
@@ -108,23 +113,32 @@ export async function POST(req: Request) {
         content: JSON.stringify(userMsg),
       };
       const persistWithRetry = async (retries = 2, delayMs = 500) => {
+        let lastErr: unknown;
         for (let i = 0; i <= retries; i++) {
           try {
             await appendAgentMessage(effectiveSessionId, payload);
             return;
           } catch (err) {
-            if (i === retries) {
-              console.error(
-                "[chat/route] Failed to persist user message after retries:",
-                err,
-              );
-            } else {
+            lastErr = err;
+            if (i < retries) {
               await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
             }
           }
         }
+        throw lastErr;
       };
-      persistWithRetry();
+      try {
+        await persistWithRetry();
+      } catch (err) {
+        console.error(
+          "[chat/route] Failed to persist user message after retries:",
+          err,
+        );
+        return new Response(
+          JSON.stringify({ error: "Failed to save your message" }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
     }
   }
 
@@ -142,11 +156,10 @@ export async function POST(req: Request) {
   const lastAssistantMsg = [...messages]
     .reverse()
     .find((m) => m.role === "assistant");
-  const pendingAskUser = !!(lastAssistantMsg?.parts ?? []).some(
-    (p) =>
-      p.type === "tool-invocation" &&
-      "toolName" in p &&
-      p.toolName === "AskUser",
+  // AI SDK v6: tool parts use the typed `tool-{name}` shape, not the v4
+  // "tool-invocation" string. Use the SDK helpers for forward-compat.
+  const pendingAskUser = (lastAssistantMsg?.parts ?? []).some(
+    (p) => isToolUIPart(p) && getToolName(p) === "AskUser",
   );
 
   // Classify query for fast-path

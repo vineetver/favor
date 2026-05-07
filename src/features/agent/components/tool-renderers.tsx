@@ -1042,7 +1042,10 @@ export function ActivityTimeline({
                 <div className="ml-6 space-y-0.5">
                   {unclaimedParts.map((part, pidx) => (
                     <DirectToolLine
-                      key={part.toolCallId ?? `unclaimed-${pidx}`}
+                      key={
+                        part.toolCallId ??
+                        `unclaimed-${part.toolName ?? part.type}-${part.state}-${pidx}`
+                      }
                       part={part}
                     />
                   ))}
@@ -1068,7 +1071,13 @@ export function ActivityTimeline({
   return (
     <div className="space-y-0.5 py-1">
       {siblingToolParts.map((part, idx) => (
-        <DirectToolLine key={part.toolCallId ?? `tool-${idx}`} part={part} />
+        <DirectToolLine
+          key={
+            part.toolCallId ??
+            `tool-${part.toolName ?? part.type}-${part.state}-${idx}`
+          }
+          part={part}
+        />
       ))}
       {completedParts.length >= 2 && !isStreaming && (
         <div className="pt-1 text-[10px] text-muted-foreground/60">

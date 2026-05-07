@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteSessionClient, listSessionsClient } from "../lib/session-client";
 
-const SESSIONS_KEY = ["agent-sessions"] as const;
+export const SESSIONS_KEY = ["agent-sessions"] as const;
 
 export function useSessions() {
   const queryClient = useQueryClient();
