@@ -251,8 +251,8 @@ export function WorkspaceSidebar({
               </p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Start a chat to begin exploring. Variant lists you upload via
-                Batch Annotation will appear here once processed and can be
-                used directly in conversations with the agent.
+                Batch Annotation will appear here once processed and can be used
+                directly in conversations with the agent.
               </p>
               <Link
                 href="/batch-annotation"
