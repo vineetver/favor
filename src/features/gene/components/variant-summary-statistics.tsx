@@ -1249,6 +1249,20 @@ export function VariantSummaryStatistics({
 
   return (
     <div className="space-y-6">
+      {scope.kind === "region" && (
+        <p className="text-xs text-muted-foreground">
+          All statistics on this page are precomputed from 1000&nbsp;bp bins, so
+          values are approximate. Gene pages and{" "}
+          <Link
+            href={buildExplorerHref(scope, {})}
+            className="text-primary hover:underline"
+          >
+            Variant Explorer
+          </Link>{" "}
+          return exact counts.
+        </p>
+      )}
+
       {/* Header tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <DrillTile label="Total Variants" value={fmt(total)} scope={scope} />
@@ -1290,19 +1304,6 @@ export function VariantSummaryStatistics({
           }
         />
       </div>
-
-      {scope.kind === "region" && (
-        <p className="-mt-3 text-xs text-muted-foreground">
-          Region counts above are estimates from sampled bins; gene pages and{" "}
-          <Link
-            href={buildExplorerHref(scope, {})}
-            className="text-primary hover:underline"
-          >
-            Variant Explorer
-          </Link>{" "}
-          return exact values.
-        </p>
-      )}
 
       {/* Where + Frequency */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
