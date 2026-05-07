@@ -5,23 +5,17 @@ import { useCohorts } from "@features/batch/hooks/use-cohorts";
 import type { CohortListItem } from "@features/batch/types";
 import { cn } from "@infra/utils";
 import { QuotaBar } from "@shared/components/quota-bar";
-import { Button } from "@shared/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
 import { useQuotas } from "@shared/hooks/use-quotas";
-import {
-  ChevronRightIcon,
-  MessageSquareIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { ChevronRightIcon, MessageSquareIcon, Trash2Icon } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useSessions } from "../hooks/use-sessions";
 import { CohortPromptPicker } from "./cohort-prompt-picker";
-import { VariantSubmitPanel } from "./variant-submit-panel";
 import {
   RESOURCE_VIEWER_CLOSED,
   ResourceViewer,
@@ -95,8 +89,6 @@ export function WorkspaceSidebar({
   onNewChat,
   className,
 }: WorkspaceSidebarProps) {
-  const [showSubmit, setShowSubmit] = useState(false);
-
   // ---- Sessions ----
   const {
     sessions,
@@ -110,10 +102,6 @@ export function WorkspaceSidebar({
 
   // ---- Cohorts (for prompt picker + tree deletion) ----
   const { cohorts, refetch: refetchCohorts } = useCohorts();
-
-  const handleCohortCreated = useCallback(() => {
-    refetchCohorts();
-  }, [refetchCohorts]);
 
   const handleCohortRemoved = useCallback(
     (cohortId: string) => {
@@ -138,17 +126,8 @@ export function WorkspaceSidebar({
       onNewChat();
       onSendMessage(message);
       setSelectedCohort(null);
-      setShowSubmit(false);
     },
     [onSendMessage, onNewChat],
-  );
-
-  const handleAnalyzeCohort = useCallback(
-    (cohortId: string) => {
-      const cohort = cohorts.find((c) => c.id === cohortId);
-      if (cohort) handleNewCohortConversation(cohort);
-    },
-    [cohorts, handleNewCohortConversation],
   );
 
   const handleDeleteSession = useCallback(
@@ -186,7 +165,7 @@ export function WorkspaceSidebar({
     [onSendMessage, onNewChat],
   );
 
-  const isEmpty = sessions.length === 0 && cohorts.length === 0 && !showSubmit;
+  const isEmpty = sessions.length === 0 && cohorts.length === 0;
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
@@ -195,17 +174,6 @@ export function WorkspaceSidebar({
         <h2 className="text-[13px] font-semibold text-foreground tracking-tight">
           Workspace
         </h2>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
-            onClick={() => setShowSubmit((v) => !v)}
-            title="Upload variant list"
-          >
-            <PlusIcon className="size-3.5" />
-          </Button>
-        </div>
       </div>
 
       <div className="mx-4 h-px bg-border" />
@@ -275,25 +243,23 @@ export function WorkspaceSidebar({
             </SidebarSection>
           )}
 
-          {/* Submit Panel */}
-          {showSubmit && (
-            <div className="px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-200">
-              <VariantSubmitPanel
-                onCohortCreated={handleCohortCreated}
-                onAnalyzeCohort={handleAnalyzeCohort}
-              />
-            </div>
-          )}
-
           {/* Empty state */}
           {isEmpty && (
-            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+            <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
               <p className="text-[13px] font-medium text-foreground">
-                No conversations yet
+                Nothing here yet
               </p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Start a chat to begin exploring
+                Start a chat to begin exploring. Variant lists you upload via
+                Batch Annotation will appear here once processed and can be
+                used directly in conversations with the agent.
               </p>
+              <Link
+                href="/batch-annotation"
+                className="mt-1 text-[11px] font-medium text-primary hover:underline"
+              >
+                Open Batch Annotation →
+              </Link>
             </div>
           )}
         </div>
