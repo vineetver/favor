@@ -20,44 +20,57 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org). Variant annotation, ge
 
 ## Features
 
-### AI and agent workflows
+### Agent
 - **FAVOR Agent**: Claude Code for variant interpretation. For biobank-scale rare-variant analysis, see [FAVOR CLI](https://github.com/vineetver/favor-cli).
-- **Structured RAG over the knowledge graph**: plain-English queries compile into one server-side plan across Kuzu, ClickHouse, and parquet. N-hop traversals finish in one round-trip instead of N API calls.
-- **Seven graph modes**:
-  - `chain`: multi-hop (Disease <-> Gene <-> Drug, Variant <-> Gene <-> Pathway)
-  - `neighbors`: direct links
-  - `context`: surrounding facts
-  - `compare`: two entities side by side
-  - `aggregate`: group and count
-  - `enrich`: statistical overrepresentation
-  - `paths`: shortest path between two entities
-- **Multi-step workflows** with stateful agents, e.g.:
+- **Structured RAG**: plain English compiles to one server-side plan across Kuzu, Clickhouse, parquet, and 50+ data APIs. Multi-hop in one round-trip.
+- **Seven graph modes**: `chain` (multi-hop), `neighbors` (direct links), `context` (surrounding facts), `compare` (two entities side by side), `aggregate` (group and count), `enrich` (statistical overrepresentation), `paths` (shortest path between two entities).
+- **Multi-step workflows** with stateful agents:
   - variant list → gene → function → pathway, with GWAS stats
   - variant → predicted cell effect (multi-omics, IGVF)
   - variant → measured cell effect (CRISPRi, MPRA, MAVE, base editing)
+- **Tool surface**: 100+ data APIs collapsed into 5 tools (`read`, `search`, `state`, `run`, `askUser`) and 20+ `run` subcommands for retrieval and workflows.
+- **Schema-aware**: progressive schema disclosure across Clickhouse, the Kuzu graph, and the data APIs. Coarse catalog at session start, full per-table schema fetched on demand.
+- **Two-channel tool results**: large tables summarized in place. Summary to the LLM, full payload routed to the UI as an artifact.
+- **Auto-relaxation**: too few results, the agent ranks and suggests broader filters in the same call.
 - **Generative UI**: ten inline chat components (bar, comparison, distribution, enrichment, heatmap, network, protein structure, QQ, scatter, stat card).
-- **Persistent workspace**: variant lists, tool outputs, pinned entities across turns.
-- **AlphaGenome**: async submit-and-poll for DeepMind's variant-effect predictor.
+- **Persistent workspace**: state carries across turns. Past results, pins, saved subsets, graph state.
 
-### Scale and visualization
-- **8.9B-variant genome browser**: Gosling.js and HiGlass, no client-side aggregation.
-- **In-browser SQL**: DuckDB WASM over parquet.
-- **Server-side tables**: TanStack Table with backend pagination, sort, filter, column select.
-- **Interactive knowledge graphs**: Cytoscape and XYFlow over variant, gene, disease, drug.
-- **Locus plots**: Manhattan, QQ, tissue heatmaps, allele-frequency distributions.
+### Search
+- **Type-ahead over 8.9 billion variants**: RocksDB-backed prefix index serves rsID and coordinate (e.g. 1-10001-A-T) prefixes across the full variant catalog as you type.
+- **Universal search** across 18 entity types (variants, genes, diseases, drugs, pathways, phenotypes, studies, GO terms, side effects, cCREs, metabolites, signals, protein domains, tissues, cell types, …). Tiered typeahead (exact → prefix → fuzzy → related) with intent routing.
+- **One search box**: rsIDs, VCF coords, SPDI, gene symbols, ontology IDs. Partial input OK. Confidence-scored intent routing.
 
-### Search and discovery
-- **Universal search** across variants, genes, diseases, drugs, studies. Typeahead, intent routing.
-- **Variant pages**: annotation, GWAS, gnomAD ancestry, tissue QTLs, ChromBPNet, allelic imbalance, methylation.
-- **Gene pages**: variant scan, summary stats, pathways, drug targets.
-- **Disease and drug pages**: Open Targets GraphQL, evidence summaries.
-- **Regulatory genomics**: cCRE, QTL, enhancer-gene links, chromatin states, loops.
+### Batch
+- **Annotation pipeline**: variant list in, every FAVOR annotation joined out. Clinical, predicted, GWAS, regulatory, perturbation, all in one cohort.
+- **Input shapes**: variant lists, GWAS summary stats, credible sets, fine-mapping.
+- **Multi-format ingest**: CSV/TSV/TXT/VCF/parquet up to 50MB. Variant keys auto-inferred (rsID, SPDI, VID, 4-column VCF). Column auto-mapping with dry-run resolution rates.
+- **Enrichment packs**: optional add-ons selected at submit. Analyses (gene/pathway/tissue overrepresentation, with per-analysis variant-count limits) and extra annotation tables (e.g. multi-omics, measured effects, regulatory tracks) that go beyond per-variant annotation.
+- **Six-stage execution**: queued → resolving → sorting → processing → enriching → done. Two-phase polling.
+- **In-browser SQL on results**: when a job finishes, query the cohort with DuckDB WASM over parquet, right in the browser. Schema cache survives presigned-URL rotation.
+
+### Genome browser
+- **8.9B-variant browser**: Gosling.js and HiGlass for browsing the full genetic and regulatory landscape around any locus.
+- **13+ track types**: gene annotations, CADD per allele, AlphaMissense per allele, ClinVar, GERP-N/RS, Gnocchi non-coding constraint, H3K27ac/H3K4me3/ATAC/DNase/CTCF (ENCODE), cCREs, eQTL and CRISPRi link arcs, validated-enhancer arcs, Umap/Bismap mappability, recombination and local diversity.
+
+### Pages
+- **Variant** (24 sections): annotation and integrative scoring; clinical (ClinVar, PGx, somatic); predicted impact (SpliceAI, conservation, protein, MaveDB with ACMG-style tiers); GWAS (catalog, credible sets, locus-to-gene); population (gnomAD ancestry, local diversity, de novo rate); regulatory (chromatin, epigenetics, TFs, mappability).
+- **Gene** (25+ sections): function, expression, phenotypes; constraints, PPI, pathway leverage; therapeutics (tractability, drug landscape, chemical probes, TEPs, safety, cancer); tissue context (accessibility, enhancers, cCREs, QTLs, ChromBPNet, V2F, perturbation across CRISPRi/MPRA/base-editing), plus AlphaGenome predictions (9 modalities × 18 tissue groups, up to 1Mb).
+- **Region**: gene-page regulatory/functional stack scoped to coordinates. 1000bp summary bins precomputed server-side.
+- **Disease**: profile and ontology, associated genes (Open Targets), drugs by phase, GWAS variants, studies, phenotypes.
+- **Drug**: profile, targets (ChEMBL, DGIdb), indications by phase, pharmacogenomics, adverse effects, drug-drug interactions.
+
+### Knowledge graph
+- **Cross-domain queries in one traversal**: "diseases linked to variants in pathways targeted by approved drugs", "drugs targeting genes with regulatory hits in this region", "phenotypes shared between mouse knockouts and human patients with variants in this gene". Each is one query, not four databases stitched together.
+- **Cytoscape and XYFlow visualization** over variant, gene, disease, drug. Color-coded by entity type and evidence. Graph, list, and split layouts. Inspector, path finder, intersection, settings panels.
 
 ### Platform
-- **Batch annotation**: variant list upload, parquet validation, analytics runs, tissue enrichment packs.
-- **Auth**: cookies, quotas, personal API keys, authenticated SSE proxy.
+- **Auth**: cookies, quotas with adaptive polling, personal API keys, authenticated SSE proxy.
 - **Shareable URLs**: deep links round-trip for browser, search, and agent state.
 - **Type-safe API**: feature-isolated clients, boundary parsing into branded types.
+- **Platform status**: aggregated live incidents across NERC, Vercel, and self-hosted services with scope and impact.
+- **What's new**: in-app release notes and dismissible update notifications.
+- **Settings**: profile, API keys with labels, expirations, revocation, and usage.
+- **CLI bridge**: companion FAVOR CLI for VCF ingest, local annotation, STAAR rare-variant association, and MetaSTAAR cross-biobank meta-analysis.
 
 ## Quick Start
 
