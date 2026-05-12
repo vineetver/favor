@@ -35,7 +35,7 @@ const SYNTHESIS_MODES = {
     factory: () => openai("gpt-5.4-mini"),
     providerOptions: {
       openai: {
-        reasoningEffort: "minimal",
+        reasoningEffort: "low",
       } satisfies OpenAILanguageModelResponsesOptions,
     } as ProviderOptions,
   },
