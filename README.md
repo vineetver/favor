@@ -64,7 +64,8 @@ Web frontend for [FAVOR](https://favor-beta.genohub.org). Variant annotation, ge
 - **Cytoscape and XYFlow visualization** over variant, gene, disease, drug. Color-coded by entity type and evidence. Graph, list, and split layouts. Inspector, path finder, intersection, settings panels.
 
 ### Platform
-- **Auth**: cookies, quotas with adaptive polling, personal API keys, authenticated SSE proxy.
+- **Auth**: cookies, personal API keys, authenticated SSE proxy.
+- **Usage quotas**: per-day cap on agent messages, concurrent-cohort cap, daily caps on large and small uploads.
 - **Shareable URLs**: deep links round-trip for browser, search, and agent state.
 - **Type-safe API**: feature-isolated clients, boundary parsing into branded types.
 - **Platform status**: aggregated live incidents across NERC, Vercel, and self-hosted services with scope and impact.

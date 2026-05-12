@@ -315,13 +315,43 @@ export interface SignalRow {
   ctcf: number | null;
   h3k27ac: number | null;
   h3k4me3: number | null;
-  has_dnase?: boolean;
-  has_atac?: boolean;
-  has_ctcf?: boolean;
-  has_h3k27ac?: boolean;
-  has_h3k4me3?: boolean;
   max_signal: number | null;
   ccre_classification: string;
+}
+
+// Pre-aggregated matrix cell: one per (cCRE × tissue_group), already collapsed
+// across biosamples server-side. Backs the cCRE Activity heatmap.
+export interface RegionSignalMatrixCell {
+  ccre_id: string;
+  start: number;
+  end: number;
+  ccre_classification?: string;
+  tissue_group?: string;
+  peak_signal: number | null;
+  mean_dnase: number | null;
+  mean_atac: number | null;
+  mean_ctcf: number | null;
+  mean_h3k27ac: number | null;
+  mean_h3k4me3: number | null;
+  biosample_count: number;
+  top_biosample?: string;
+}
+
+export interface FetchSignalMatrixParams {
+  tissue?: string;
+  tissue_group?: string;
+  ccre_class?: string;
+  min_signal?: number;
+  top_ccres?: number;
+}
+
+export async function fetchSignalMatrix(
+  loc: string,
+  params: FetchSignalMatrixParams = {},
+): Promise<RegionSignalMatrixCell[]> {
+  const qs = buildParams(params as unknown as Record<string, unknown>);
+  const url = `${API_BASE}/regions/${encodeURIComponent(loc)}/signals/matrix${qs ? `?${qs}` : ""}`;
+  return fetchJson<RegionSignalMatrixCell[]>(url);
 }
 
 export interface FetchSignalsParams {

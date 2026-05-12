@@ -1,6 +1,9 @@
 "use client";
 
-import type { SignalRow } from "@features/enrichment/api/region";
+import {
+  fetchSignalMatrix,
+  type RegionSignalMatrixCell,
+} from "@features/enrichment/api/region";
 import { cn } from "@infra/utils";
 import {
   Tooltip,
@@ -9,10 +12,8 @@ import {
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import { useClientSearchParams } from "@shared/hooks";
-import { inferTissueGroup } from "@shared/utils/tissue-format";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
-import { API_BASE } from "@/config/api";
 
 // ---------------------------------------------------------------------------
 // Marks config
@@ -66,54 +67,30 @@ const MARKS = [
 type MarkKey = (typeof MARKS)[number]["key"];
 
 // ---------------------------------------------------------------------------
-// Data fetching — single request via top_ccres param
-// ---------------------------------------------------------------------------
-
-async function fetchHeatmapData(loc: string): Promise<SignalRow[]> {
-  const params = new URLSearchParams({ top_ccres: "25" });
-  const res = await fetch(
-    `${API_BASE}/regions/${encodeURIComponent(loc)}/signals?${params}`,
-    { credentials: "include" },
-  );
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  const json = await res.json();
-  return json.data;
-}
-
-// ---------------------------------------------------------------------------
-// Pivot flat rows → matrix (aggregated by tissue_group, mean across biosamples)
+// Matrix — one cell per (cCRE × tissue_group), pre-aggregated server-side.
 // ---------------------------------------------------------------------------
 
 const ASSAY_KEYS = ["dnase", "atac", "ctcf", "h3k27ac", "h3k4me3"] as const;
 type AssayKey = (typeof ASSAY_KEYS)[number];
 
-/**
- * One aggregated cell. Numeric fields are means across biosamples — `max`
- * saturated everything because at least one outlier biosample with high signal
- * exists in nearly every group, so means are what actually surface specificity.
- * `peak_signal` keeps the best single biosample for the tooltip context.
- */
 interface AggCell {
   ccre_id: string;
   tissue_group: string;
-  /** Mean of per-biosample max_signal */
+  /** Peak max_signal across biosamples in this group */
   max_signal: number;
-  /** Mean of per-biosample mark Z-scores (null if no biosample in this group reports the mark) */
+  /** Mean assay Z-score across biosamples (null when no biosample reports it) */
   dnase: number | null;
   atac: number | null;
   ctcf: number | null;
   h3k27ac: number | null;
   h3k4me3: number | null;
-  /** Highest single-biosample max_signal observed in this group */
   peak_signal: number;
-  /** Distinct biosample count in this group at this cCRE */
   biosample_count: number;
-  /** Biosample whose max_signal equalled peak_signal */
   top_biosample: string | null;
   ccre_classification: string;
 }
 
-/** Per-(cCRE, mark) mean and std across tissue groups — for column z-score. */
+/** Per-(cCRE, mark) mean and std across tissue groups, for column z-score. */
 interface ColStat {
   mean: number;
   std: number;
@@ -127,110 +104,36 @@ interface HeatmapMatrix {
   colStats: Map<string, ColStat>;
 }
 
-function rowGroup(row: SignalRow): string {
-  return row.tissue_group?.trim() || inferTissueGroup(row.tissue_name);
-}
-
-interface MarkAcc {
-  sum: number;
-  count: number;
-}
-
-interface CellAcc {
-  signalSum: number;
-  signalCount: number;
-  peak: number;
-  topBiosample: string | null;
-  classification: string;
-  biosamples: Set<string>;
-  marks: Record<AssayKey, MarkAcc>;
-}
-
-function newCellAcc(): CellAcc {
-  return {
-    signalSum: 0,
-    signalCount: 0,
-    peak: 0,
-    topBiosample: null,
-    classification: "",
-    biosamples: new Set(),
-    marks: {
-      dnase: { sum: 0, count: 0 },
-      atac: { sum: 0, count: 0 },
-      ctcf: { sum: 0, count: 0 },
-      h3k27ac: { sum: 0, count: 0 },
-      h3k4me3: { sum: 0, count: 0 },
-    },
-  };
-}
-
-function pivotToMatrix(rows: SignalRow[]): HeatmapMatrix {
+function cellsToMatrix(input: RegionSignalMatrixCell[]): HeatmapMatrix {
   const ccreOrder: string[] = [];
   const ccreSet = new Set<string>();
   const groupSet = new Set<string>();
-  const accs = new Map<string, CellAcc>();
+  const cells = new Map<string, AggCell>();
 
-  for (const row of rows) {
-    if (!ccreSet.has(row.ccre_id)) {
-      ccreSet.add(row.ccre_id);
-      ccreOrder.push(row.ccre_id);
+  for (const c of input) {
+    if (!ccreSet.has(c.ccre_id)) {
+      ccreSet.add(c.ccre_id);
+      ccreOrder.push(c.ccre_id);
     }
-    const group = rowGroup(row);
+    const group = c.tissue_group?.trim() || "Unknown";
     groupSet.add(group);
 
-    const key = `${row.ccre_id}|${group}`;
-    let acc = accs.get(key);
-    if (!acc) {
-      acc = newCellAcc();
-      accs.set(key, acc);
-    }
-
-    const biosample = row.subtissue_name ?? row.tissue_name;
-    acc.biosamples.add(biosample);
-
-    if (row.max_signal != null) {
-      acc.signalSum += row.max_signal;
-      acc.signalCount += 1;
-      if (row.max_signal > acc.peak) {
-        acc.peak = row.max_signal;
-        acc.topBiosample = biosample;
-        if (row.ccre_classification)
-          acc.classification = row.ccre_classification;
-      }
-    }
-
-    for (const mark of ASSAY_KEYS) {
-      const v = row[mark];
-      if (v != null) {
-        acc.marks[mark].sum += v;
-        acc.marks[mark].count += 1;
-      }
-    }
-  }
-
-  const cells = new Map<string, AggCell>();
-  for (const [key, acc] of accs) {
-    const sep = key.indexOf("|");
-    const ccre_id = key.slice(0, sep);
-    const tissue_group = key.slice(sep + 1);
-    const meanOf = (m: MarkAcc) => (m.count > 0 ? m.sum / m.count : null);
-    cells.set(key, {
-      ccre_id,
-      tissue_group,
-      max_signal: acc.signalCount > 0 ? acc.signalSum / acc.signalCount : 0,
-      dnase: meanOf(acc.marks.dnase),
-      atac: meanOf(acc.marks.atac),
-      ctcf: meanOf(acc.marks.ctcf),
-      h3k27ac: meanOf(acc.marks.h3k27ac),
-      h3k4me3: meanOf(acc.marks.h3k4me3),
-      peak_signal: acc.peak,
-      biosample_count: acc.biosamples.size,
-      top_biosample: acc.topBiosample,
-      ccre_classification: acc.classification,
+    cells.set(`${c.ccre_id}|${group}`, {
+      ccre_id: c.ccre_id,
+      tissue_group: group,
+      max_signal: c.peak_signal ?? 0,
+      dnase: c.mean_dnase,
+      atac: c.mean_atac,
+      ctcf: c.mean_ctcf,
+      h3k27ac: c.mean_h3k27ac,
+      h3k4me3: c.mean_h3k4me3,
+      peak_signal: c.peak_signal ?? 0,
+      biosample_count: c.biosample_count,
+      top_biosample: c.top_biosample ?? null,
+      ccre_classification: c.ccre_classification ?? "",
     });
   }
 
-  // Per-column stats (one (mean, std) per cCRE × mark) for z-score coloring.
   const allMarks: MarkKey[] = ["max_signal", ...ASSAY_KEYS];
   const colStats = new Map<string, ColStat>();
   for (const ccre_id of ccreOrder) {
@@ -256,8 +159,8 @@ function pivotToMatrix(rows: SignalRow[]): HeatmapMatrix {
     }
   }
 
-  // Sort groups by mean column z-score across all cCREs (most consistently
-  // above-average groups first). Falls back to mean signal when std is 0.
+  // Sort groups by mean column z-score so consistently above-average groups
+  // surface to the top, matching the prior heatmap ordering.
   const groupScore = new Map<string, { sum: number; n: number }>();
   for (const ccre_id of ccreOrder) {
     const stat = colStats.get(`${ccre_id}|max_signal`);
@@ -370,7 +273,7 @@ function CellTooltip({ cell, z }: { cell: AggCell; z: number | null }) {
       <div className="flex justify-between opacity-60 pt-1 border-t border-current/20 text-[11px]">
         <span>{cell.ccre_classification || "\u2014"}</span>
         <span className="tabular-nums">
-          mean {cell.max_signal.toFixed(2)}
+          {cell.max_signal.toFixed(2)}
           {z != null && ` \u00b7 ${z >= 0 ? "+" : ""}${z.toFixed(1)}\u03c3`}
         </span>
       </div>
@@ -795,15 +698,15 @@ const BAR_CHART_THRESHOLD = 2;
 export function SignalHeatmap({ loc }: SignalHeatmapProps) {
   const [activeMark, setActiveMark] = useState<MarkKey>("max_signal");
 
-  const { data: rows, isLoading } = useQuery({
+  const { data: cells, isLoading } = useQuery({
     queryKey: ["heatmap", loc],
-    queryFn: () => fetchHeatmapData(loc),
+    queryFn: () => fetchSignalMatrix(loc, { top_ccres: 25 }),
     staleTime: 5 * 60 * 1000,
   });
 
   const matrix = useMemo(
-    () => (rows?.length ? pivotToMatrix(rows) : null),
-    [rows],
+    () => (cells?.length ? cellsToMatrix(cells) : null),
+    [cells],
   );
 
   if (isLoading) {
@@ -817,7 +720,13 @@ export function SignalHeatmap({ loc }: SignalHeatmapProps) {
     );
   }
 
-  if (!matrix || matrix.ccreIds.length === 0) return null;
+  if (!matrix || matrix.ccreIds.length === 0) {
+    return (
+      <div className="border border-border rounded-lg px-4 py-8 text-center text-sm text-muted-foreground">
+        No cCRE activity data available for this region.
+      </div>
+    );
+  }
 
   const View =
     matrix.ccreIds.length <= BAR_CHART_THRESHOLD ? BarChartView : HeatmapView;
