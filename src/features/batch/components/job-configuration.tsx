@@ -4,6 +4,7 @@ import { cn } from "@infra/utils";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Switch } from "@shared/components/ui/switch";
+import { useFlag } from "@shared/lib/feature-flags";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -57,6 +58,7 @@ export function JobConfiguration({
   const [showEmail, setShowEmail] = useState(false);
   const switchId = useId();
   const emailId = useId();
+  const igvfEnabled = useFlag("igvfLipid");
 
   // Enrichment state
   const [selectedAnalyses, setSelectedAnalyses] = useState<Set<string>>(
@@ -127,7 +129,9 @@ export function JobConfiguration({
 
       {/* Enrichment — border + padding handled inside (returns null when empty) */}
       <EnrichmentPicker
-        analyses={enrichmentData?.analyses ?? []}
+        analyses={(enrichmentData?.analyses ?? []).filter(
+          (a) => a.name !== "igvf_lipid" || igvfEnabled,
+        )}
         tables={enrichmentData?.exportable_tables ?? []}
         tissueGroups={tissueGroups}
         isLoading={isLoadingEnrichment}

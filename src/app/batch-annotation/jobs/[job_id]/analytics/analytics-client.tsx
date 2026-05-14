@@ -12,6 +12,7 @@ import { IgvfLipidReport } from "@features/batch/components/igvf-lipid-report";
 import { JobAnalyticsReport } from "@features/batch/components/job-analytics-report";
 import { ShareDialog } from "@features/batch/components/share-dialog";
 import { Button } from "@shared/components/ui/button";
+import { useFlag } from "@shared/lib/feature-flags";
 import { Card, CardContent } from "@shared/components/ui/card";
 import {
   Tooltip,
@@ -124,9 +125,11 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
 
   const shareErrorCode: ShareErrorCode | null = getShareErrorCode(error);
 
+  const igvfEnabled = useFlag("igvfLipid");
   const hasIgvfLipid =
-    cohortDetail?.enrichments?.analyses?.some((a) => a.name === "igvf_lipid") ??
-    false;
+    igvfEnabled &&
+    (cohortDetail?.enrichments?.analyses?.some((a) => a.name === "igvf_lipid") ??
+      false);
 
   // Use fresh URL from cohort detail — NOT from polling cache which may have expired
   const freshDataUrl = cohortDetail?.output?.url;
@@ -473,7 +476,7 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
               jobId={jobId}
               filename={job?.input?.filename}
             />
-          ) : viewMode === "igvf" ? (
+          ) : viewMode === "igvf" && hasIgvfLipid ? (
             <IgvfLipidReport
               cohortId={jobId}
               dataUrl={dataUrl}

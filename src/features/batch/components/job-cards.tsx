@@ -27,12 +27,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import { ERROR_RECOVERY_CONFIG } from "../constants";
 import { useTick } from "../hooks/use-tick";
-import {
-  formatBytes,
-  formatDuration,
-  formatNumber,
-  formatTime,
-} from "../lib/format";
+import { formatDuration, formatNumber, formatTime } from "../lib/format";
 import type {
   JobCancelled,
   JobCancelRequested,
@@ -529,15 +524,14 @@ export function CompletedJobCard({
                   Results Ready
                 </p>
                 <p className="text-xs text-emerald-600 mt-0.5">
-                  {output.bytes_human || formatBytes(output.bytes)} Parquet
-                  format
+                  All files · zip
                 </p>
               </div>
             </div>
             {onDownload && (
               <Button type="button" onClick={onDownload}>
                 <Download className="w-4 h-4" />
-                Download
+                Download all
               </Button>
             )}
           </div>

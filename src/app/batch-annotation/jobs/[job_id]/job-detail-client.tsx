@@ -10,6 +10,7 @@ import {
   listCohorts,
   useJobPolling,
 } from "@features/batch";
+import { API_BASE } from "@/config/api";
 import { Button } from "@shared/components/ui/button";
 import { Card, CardContent } from "@shared/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -197,16 +198,16 @@ export function JobDetailClient({ jobId }: JobDetailClientProps) {
   }, [jobId, queryClient]);
 
   const handleDownload = useCallback(() => {
-    if (job?.state === "COMPLETED" && job.output?.url) {
-      const link = document.createElement("a");
-      link.href = job.output.url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  }, [job]);
+    if (job?.state !== "COMPLETED") return;
+    // Streams the full cohort folder as a zip. Server sets Content-Disposition;
+    // we don't override the filename. Cookie auth travels with the navigation.
+    const link = document.createElement("a");
+    link.href = `${API_BASE}/cohorts/${encodeURIComponent(jobId)}/files.zip`;
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [job, jobId]);
 
   const handleDownloadManifest = useCallback(() => {
     if (job?.state === "COMPLETED" && job.output?.manifest_url) {
