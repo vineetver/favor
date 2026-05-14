@@ -159,13 +159,14 @@ async function fetchPrediction<T>(
   const url = job.url!;
   const cached = job.cached ?? false;
 
-  // Fetch artifact — retry once on 404 (S3 propagation delay).
-  // S3 URLs are immutable per computation, so force-cache lets the browser
-  // skip the network entirely on revisit / page refresh.
-  let artifact = await fetch(url, { signal, cache: "force-cache" });
+  // Fetch artifact. Bypass HTTP cache: stale/incomplete prior responses
+  // (e.g. a previous CORS-blocked or zero-byte fetch) can be returned by
+  // force-cache, which silently produces empty bodies. Re-fetch every time;
+  // the signed URL is short-lived anyway.
+  let artifact = await fetch(url, { signal, cache: "no-store" });
   if (artifact.status === 404) {
     await abortableSleep(2000, signal);
-    artifact = await fetch(url, { signal, cache: "force-cache" });
+    artifact = await fetch(url, { signal, cache: "no-store" });
   }
 
   if (!artifact.ok) {
@@ -177,17 +178,25 @@ async function fetchPrediction<T>(
     );
   }
 
-  // Buffer the whole response, then decide what to do based on the actual
-  // bytes — not the headers. Headers lie (Content-Encoding auto-decoded by
-  // the browser, missing Content-Type, etc.); the bytes do not.
+  // Buffer the whole response, then decide based on the actual bytes —
+  // not the headers. Capture header context once so any downstream error
+  // names which step ate the bytes (initial fetch, decompress, decode).
+  const ce = artifact.headers.get("content-encoding") ?? "(none)";
+  const ct = artifact.headers.get("content-type") ?? "(none)";
+  const reportedLen = artifact.headers.get("content-length") ?? "?";
+
   let bytes = new Uint8Array(await artifact.arrayBuffer());
-  if (bytes.length === 0) {
-    throw new Error(`Artifact empty (0 bytes) | url=${safeUrl(url)}`);
+  const fetchedLen = bytes.length;
+  if (fetchedLen === 0) {
+    throw new Error(
+      `Artifact empty after fetch (0 bytes) | url=${safeUrl(url)} | reported-content-length=${reportedLen} | content-type=${ct} | content-encoding=${ce}`,
+    );
   }
 
   // Gzip magic header is 0x1f 0x8b. If present, decompress; otherwise the
   // body is already plain JSON (browser auto-decoded, or server sent it raw).
-  if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+  const wasGzip = bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+  if (wasGzip) {
     try {
       bytes = new Uint8Array(
         await new Response(
@@ -199,22 +208,33 @@ async function fetchPrediction<T>(
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
       throw new Error(
-        `Artifact gzip decompression failed (${reason}) | url=${safeUrl(url)}`,
+        `Artifact gzip decompression failed (${reason}) | url=${safeUrl(url)} | fetched-bytes=${fetchedLen}`,
       );
     }
     if (bytes.length === 0) {
-      throw new Error(`Artifact decompressed to 0 bytes | url=${safeUrl(url)}`);
+      throw new Error(
+        `Artifact decompressed to 0 bytes | url=${safeUrl(url)} | fetched-bytes=${fetchedLen}`,
+      );
     }
   }
 
   const text = new TextDecoder().decode(bytes);
+  if (text.length === 0) {
+    throw new Error(
+      `Artifact decoded to empty string | url=${safeUrl(url)} | fetched-bytes=${fetchedLen} | post-decompress-bytes=${bytes.length} | gzip=${wasGzip} | content-type=${ct} | content-encoding=${ce} | first-bytes=${Array.from(
+        bytes.slice(0, 4),
+      )
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ")}`,
+    );
+  }
   try {
     return { data: parseLooseJson<T>(text), cached };
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
     const excerpt = text.slice(0, 200).replace(/\s+/g, " ");
     throw new Error(
-      `Artifact JSON parse failed (${reason}) | url=${safeUrl(url)} | bytes=${text.length} | body[0..200]="${excerpt}"`,
+      `Artifact JSON parse failed (${reason}) | url=${safeUrl(url)} | fetched-bytes=${fetchedLen} | text-bytes=${text.length} | gzip=${wasGzip} | body[0..200]="${excerpt}"`,
     );
   }
 }
