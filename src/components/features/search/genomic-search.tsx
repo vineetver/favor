@@ -40,9 +40,11 @@ export function GenomicSearch() {
     () => formatSearchInput(debouncedInput),
     [debouncedInput],
   );
+  // Autocomplete API is being deprecated; force-disable typeahead network
+  // calls. Local recent/saved/example items still render on empty input.
   const { suggestions, isLoading, hasError } = useSearchSuggestions({
     query: debouncedInput,
-    shouldShowSuggestions: inputFormat.shouldShowSuggestions,
+    shouldShowSuggestions: false,
     selectedGenome,
     recentSearches: [...getSavedSearchItems(), ...getRecentSearches(4)],
   });

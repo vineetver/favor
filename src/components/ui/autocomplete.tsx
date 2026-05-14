@@ -25,7 +25,6 @@ interface AutocompleteProps {
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
-  emptyMessage?: string;
   className?: string;
   disabled?: boolean;
   isLoading?: boolean;
@@ -41,7 +40,6 @@ export function Autocomplete({
   value,
   onValueChange,
   placeholder,
-  emptyMessage = "No results found.",
   className,
   disabled,
   isLoading,
@@ -51,7 +49,6 @@ export function Autocomplete({
   children,
   onSubmit,
 }: AutocompleteProps) {
-  const [query, setQuery] = useState("");
   const [selectedValue, setSelectedValue] = useState<string>(value || "");
 
   useEffect(() => {
@@ -62,7 +59,6 @@ export function Autocomplete({
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    setQuery(newValue);
     setSelectedValue(newValue);
     onInputChange?.(newValue);
   };
@@ -70,7 +66,6 @@ export function Autocomplete({
   const handleSelectChange = (selected: AutocompleteOption | null) => {
     if (selected) {
       setSelectedValue(selected.value);
-      setQuery("");
       onValueChange?.(selected.value);
     }
   };
@@ -110,14 +105,11 @@ export function Autocomplete({
             </ComboboxButton>
           </div>
 
+          {(isLoading || options.length > 0) && (
           <ComboboxOptions className="absolute z-50 mt-1 max-h-80 w-full overflow-auto rounded-md bg-background/95 backdrop-blur-sm border shadow-lg py-1 text-base focus:outline-none sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0">
             {isLoading ? (
               <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
                 Loading...
-              </div>
-            ) : options.length === 0 && query !== "" ? (
-              <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
-                {emptyMessage}
               </div>
             ) : (
               options.map((option) => (
@@ -143,6 +135,7 @@ export function Autocomplete({
               ))
             )}
           </ComboboxOptions>
+          )}
         </div>
       </Combobox>
     </div>
