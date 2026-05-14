@@ -178,63 +178,68 @@ async function fetchPrediction<T>(
     );
   }
 
-  // Buffer the whole response, then decide based on the actual bytes —
-  // not the headers. Capture header context once so any downstream error
-  // names which step ate the bytes (initial fetch, decompress, decode).
-  const ce = artifact.headers.get("content-encoding") ?? "(none)";
+  // Decode + parse the body without materializing it as one giant JS
+  // string. Artifacts can be ~500MB of JSON after gzip decompression,
+  // which sits past V8's max string length: TextDecoder().decode() then
+  // silently returns "". Strategy: peek the first chunk to detect gzip
+  // magic, build a stream (decompressed if needed), and hand it to
+  // Response.json() so the runtime decodes UTF-8 and parses incrementally.
   const ct = artifact.headers.get("content-type") ?? "(none)";
-  const reportedLen = artifact.headers.get("content-length") ?? "?";
-
-  let bytes = new Uint8Array(await artifact.arrayBuffer());
-  const fetchedLen = bytes.length;
-  if (fetchedLen === 0) {
+  const ce = artifact.headers.get("content-encoding") ?? "(none)";
+  if (!artifact.body) {
     throw new Error(
-      `Artifact empty after fetch (0 bytes) | url=${safeUrl(url)} | reported-content-length=${reportedLen} | content-type=${ct} | content-encoding=${ce}`,
+      `Artifact has no body | url=${safeUrl(url)} | content-type=${ct} | content-encoding=${ce}`,
     );
   }
 
-  // Gzip magic header is 0x1f 0x8b. If present, decompress; otherwise the
-  // body is already plain JSON (browser auto-decoded, or server sent it raw).
-  const wasGzip = bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
-  if (wasGzip) {
-    try {
-      bytes = new Uint8Array(
-        await new Response(
-          new Blob([bytes])
-            .stream()
-            .pipeThrough(new DecompressionStream("gzip")),
-        ).arrayBuffer(),
-      );
-    } catch (e) {
-      const reason = e instanceof Error ? e.message : String(e);
-      throw new Error(
-        `Artifact gzip decompression failed (${reason}) | url=${safeUrl(url)} | fetched-bytes=${fetchedLen}`,
-      );
-    }
-    if (bytes.length === 0) {
-      throw new Error(
-        `Artifact decompressed to 0 bytes | url=${safeUrl(url)} | fetched-bytes=${fetchedLen}`,
-      );
-    }
-  }
-
-  const text = new TextDecoder().decode(bytes);
-  if (text.length === 0) {
+  const reader = artifact.body.getReader();
+  const first = await reader.read();
+  if (first.done || !first.value || first.value.length === 0) {
     throw new Error(
-      `Artifact decoded to empty string | url=${safeUrl(url)} | fetched-bytes=${fetchedLen} | post-decompress-bytes=${bytes.length} | gzip=${wasGzip} | content-type=${ct} | content-encoding=${ce} | first-bytes=${Array.from(
-        bytes.slice(0, 4),
+      `Artifact empty after fetch (0 bytes) | url=${safeUrl(url)} | content-type=${ct} | content-encoding=${ce}`,
+    );
+  }
+  const firstChunk = first.value;
+  const wasGzip =
+    firstChunk.length >= 2 && firstChunk[0] === 0x1f && firstChunk[1] === 0x8b;
+
+  // Re-emit the peeked chunk + the rest of the original body as a fresh
+  // stream so we don't lose the first chunk.
+  const stitched = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(firstChunk);
+    },
+    async pull(controller) {
+      const next = await reader.read();
+      if (next.done) controller.close();
+      else if (next.value) controller.enqueue(next.value);
+    },
+    cancel(reason) {
+      reader.cancel(reason).catch(() => {});
+    },
+  });
+
+  // DecompressionStream isn't typed as a TransformStream<Uint8Array,Uint8Array>
+  // in lib.dom, even though runtime behaviour matches. Cast to bridge that.
+  const decoded = wasGzip
+    ? stitched.pipeThrough(
+        new DecompressionStream("gzip") as unknown as ReadableWritablePair<
+          Uint8Array,
+          Uint8Array
+        >,
       )
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(" ")}`,
-    );
-  }
+    : stitched;
+
   try {
-    return { data: parseLooseJson<T>(text), cached };
+    const data = (await new Response(decoded).json()) as T;
+    return { data, cached };
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
-    const excerpt = text.slice(0, 200).replace(/\s+/g, " ");
+    const firstHex = Array.from(firstChunk.slice(0, 8))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join(" ");
     throw new Error(
-      `Artifact JSON parse failed (${reason}) | url=${safeUrl(url)} | fetched-bytes=${fetchedLen} | text-bytes=${text.length} | gzip=${wasGzip} | body[0..200]="${excerpt}"`,
+      `Artifact decode/parse failed (${reason}) | url=${safeUrl(url)} | gzip=${wasGzip} | first-chunk-bytes=${firstChunk.length} | first-bytes=${firstHex} | content-type=${ct} | content-encoding=${ce}`,
     );
   }
 }
