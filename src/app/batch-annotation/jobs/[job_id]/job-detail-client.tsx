@@ -10,7 +10,6 @@ import {
   listCohorts,
   useJobPolling,
 } from "@features/batch";
-import { API_BASE } from "@/config/api";
 import { Button } from "@shared/components/ui/button";
 import { Card, CardContent } from "@shared/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,6 +26,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { API_BASE } from "@/config/api";
 
 interface JobDetailClientProps {
   jobId: string;

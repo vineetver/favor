@@ -12,7 +12,6 @@ import { IgvfLipidReport } from "@features/batch/components/igvf-lipid-report";
 import { JobAnalyticsReport } from "@features/batch/components/job-analytics-report";
 import { ShareDialog } from "@features/batch/components/share-dialog";
 import { Button } from "@shared/components/ui/button";
-import { useFlag } from "@shared/lib/feature-flags";
 import { Card, CardContent } from "@shared/components/ui/card";
 import {
   Tooltip,
@@ -20,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import { useAuth } from "@shared/hooks/use-auth";
+import { useFlag } from "@shared/lib/feature-flags";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -128,7 +128,9 @@ export function AnalyticsClient({ jobId }: AnalyticsClientProps) {
   const igvfEnabled = useFlag("igvfLipid");
   const hasIgvfLipid =
     igvfEnabled &&
-    (cohortDetail?.enrichments?.analyses?.some((a) => a.name === "igvf_lipid") ??
+    (cohortDetail?.enrichments?.analyses?.some(
+      (a) => a.name === "igvf_lipid",
+    ) ??
       false);
 
   // Use fresh URL from cohort detail — NOT from polling cache which may have expired
