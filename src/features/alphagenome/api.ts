@@ -32,10 +32,31 @@ function parseLooseJson<T>(text: string): T {
   );
 }
 
-/** Read a Response body as parsed JSON, tolerating NaN/Infinity. */
-async function readJson<T>(response: Response): Promise<T> {
-  const text = await response.text();
-  return parseLooseJson<T>(text);
+/**
+ * Read a Response body as parsed JSON, tolerating NaN/Infinity.
+ *
+ * On failure (empty body, HTML error page, malformed JSON) throws an Error
+ * carrying enough context to debug without opening devtools: the labelled
+ * step, request URL, status, content-type, body length, and first ~200
+ * chars of the response.
+ */
+async function readJson<T>(response: Response, label: string): Promise<T> {
+  const text = await response.text().catch(() => "");
+  const ct = response.headers.get("content-type") ?? "(none)";
+  const ctx = `${label} | ${response.status} ${response.url} | content-type=${ct} | bytes=${text.length}`;
+
+  if (text.length === 0) {
+    throw new Error(`${label}: empty response body (${ctx})`);
+  }
+  try {
+    return parseLooseJson<T>(text);
+  } catch (e) {
+    const excerpt = text.slice(0, 200).replace(/\s+/g, " ");
+    const reason = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      `${label}: invalid JSON (${reason}) — ${ctx} | body[0..200]="${excerpt}"`,
+    );
+  }
 }
 
 /** Sleep that respects an AbortSignal. */
@@ -91,12 +112,11 @@ async function fetchPrediction<T>(
     throw new Error(`Prediction failed (${res.status}): ${text}`);
   }
 
-  let job: JobResponse;
-  try {
-    job = await readJson<JobResponse>(res);
-  } catch {
-    throw new Error("AlphaGenome service is currently unavailable");
-  }
+  // Don't swallow parse failures — readJson already carries full context.
+  let job: JobResponse = await readJson<JobResponse>(
+    res,
+    `POST /predict/${endpoint}`,
+  );
 
   // Poll until done or failed
   while (job.status === "running") {
@@ -111,13 +131,13 @@ async function fetchPrediction<T>(
       if (signal?.aborted) throw e; // let React Query handle abort
       throw new Error("Lost connection to AlphaGenome service");
     }
-    if (poll.status === 502 || poll.status === 503) {
-      throw new Error("AlphaGenome service is currently unavailable");
-    }
     if (!poll.ok) {
-      throw new Error("AlphaGenome service is currently unavailable");
+      const body = await poll.text().catch(() => "");
+      throw new Error(
+        `Poll failed: ${poll.status} ${poll.statusText} | url=${job.poll_url} | body[0..200]="${body.slice(0, 200).replace(/\s+/g, " ")}"`,
+      );
     }
-    job = await readJson<JobResponse>(poll);
+    job = await readJson<JobResponse>(poll, `GET ${job.poll_url}`);
   }
 
   if (job.status === "failed") {
@@ -148,13 +168,21 @@ async function fetchPrediction<T>(
   // S3 may serve raw gzip without Content-Encoding header
   const ct = artifact.headers.get("content-type") ?? "";
   if (ct.includes("gzip") || ct === "application/octet-stream") {
-    const ds = new DecompressionStream("gzip");
-    const decompressed = new Response(artifact.body?.pipeThrough(ds));
-    const data = await readJson<T>(decompressed);
+    let decompressed: Response;
+    try {
+      const ds = new DecompressionStream("gzip");
+      decompressed = new Response(artifact.body?.pipeThrough(ds));
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Artifact gzip decompression failed (${reason}) — url=${url}`,
+      );
+    }
+    const data = await readJson<T>(decompressed, `Artifact (gzip) ${url}`);
     return { data, cached };
   }
 
-  const data = await readJson<T>(artifact);
+  const data = await readJson<T>(artifact, `Artifact ${url}`);
   return { data, cached };
 }
 
