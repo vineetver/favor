@@ -73,10 +73,15 @@ export interface VariantTrackRequest {
 }
 
 export interface TrackMeta {
-  track_name: string;
+  name: string;
   biosample_name: string;
+  biosample_type?: string;
   ontology_curie?: string;
   data_source?: string;
+  strand?: string;
+  tissue_group?: string;
+  assay_title?: string;
+  nonzero_mean?: number;
   [key: string]: unknown;
 }
 

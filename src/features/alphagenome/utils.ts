@@ -73,18 +73,9 @@ export const MODALITIES: ModalityMeta[] = [
     resolution: "1bp",
     description: "Tissue-specific splice usage",
   },
-  {
-    id: "splice_junctions",
-    label: "Splice Junctions",
-    resolution: "per-junction",
-    description: "Junction read counts",
-  },
-  {
-    id: "contact_maps",
-    label: "Contact Maps",
-    resolution: "2048bp",
-    description: "3D chromatin contacts",
-  },
+  // splice_junctions and contact_maps emit non-1D-line data shapes
+  // (junction pairs / 2D contact matrices). No dedicated renderer yet;
+  // re-add to the picker when those renderers exist.
 ];
 
 export const DEFAULT_VARIANT_MODALITIES: Modality[] = ["cage", "dnase"];

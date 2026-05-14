@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useScores } from "../hooks/use-scores";
 import { useVariantTracks } from "../hooks/use-variant-tracks";
+import { groupTrackIndicesByTissue } from "../lib/group";
 import type {
   Modality,
   OverallScore,
@@ -26,6 +27,7 @@ import {
   MODALITIES,
   parseVariantVcf,
 } from "../utils";
+import { ModalityErrorBoundary } from "./error-boundary";
 import { ModalityPicker } from "./modality-picker";
 import { ScoresHeatmap } from "./scores-heatmap";
 import { TissueGroupPicker } from "./tissue-group-picker";
@@ -214,11 +216,7 @@ function TracksSection({ parsed }: { parsed: ParsedVcf }) {
         </div>
       )}
 
-      {error && (
-        <p className="text-sm text-destructive">
-          {error instanceof Error ? error.message : "Failed to load tracks"}
-        </p>
-      )}
+      {error && <TracksErrorDisplay error={error} />}
 
       {data && <VariantTrackResults data={data} />}
     </section>
@@ -253,16 +251,48 @@ function VariantTrackResults({
         const modalityLabel =
           MODALITIES.find((m) => m.id === modality)?.label ?? modality;
 
+        if (refTrack.values.length === 0 || refTrack.tracks.length === 0) {
+          return (
+            <p key={modality} className="text-xs text-muted-foreground py-2">
+              No data for <span className="font-medium">{modalityLabel}</span>.
+            </p>
+          );
+        }
+
         return (
-          <ModalityTrackGroup
-            key={modality}
-            modalityLabel={modalityLabel}
-            refTrack={refTrack}
-            altTrack={altTrack}
-            variantPos={data.input.position}
-          />
+          <ModalityErrorBoundary key={modality} label={modalityLabel}>
+            <ModalityTrackGroup
+              modalityLabel={modalityLabel}
+              refTrack={refTrack}
+              altTrack={altTrack}
+              variantPos={data.input.position}
+            />
+          </ModalityErrorBoundary>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Error display ───────────────────────────────────────────
+
+function TracksErrorDisplay({ error }: { error: unknown }) {
+  const message =
+    error instanceof Error ? error.message : "Failed to load tracks";
+  const summary = message.length > 80 ? `${message.slice(0, 80)}…` : message;
+  return (
+    <div className="text-sm">
+      <p className="text-destructive">{summary}</p>
+      {message.length > 80 && (
+        <details className="mt-1">
+          <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+            Show details
+          </summary>
+          <pre className="mt-1 text-[11px] text-muted-foreground whitespace-pre-wrap break-all bg-muted/40 rounded p-2">
+            {message}
+          </pre>
+        </details>
+      )}
     </div>
   );
 }
@@ -347,6 +377,28 @@ function ModalityTrackGroup({
   const variantPct =
     numPositions > 0 ? (variantIndex / numPositions) * 100 : 50;
 
+  // Group tracks by tissue_group; bucket order is first-seen.
+  const groups = useMemo(
+    () => groupTrackIndicesByTissue(refTrack.tracks),
+    [refTrack.tracks],
+  );
+
+  // Apply displayCount across the flat list, so "Show all" controls total
+  // visible rows rather than per-bucket counts.
+  const visibleGroups = useMemo(() => {
+    let remaining = displayCount;
+    const out: Array<{ tissue: string; indices: number[] }> = [];
+    for (const g of groups) {
+      if (remaining <= 0) break;
+      const take = g.indices.slice(0, remaining);
+      remaining -= take.length;
+      out.push({ tissue: g.tissue, indices: take });
+    }
+    return out;
+  }, [groups, displayCount]);
+
+  const multiTissue = groups.length > 1;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -376,13 +428,37 @@ function ModalityTrackGroup({
           style={{ left: `${variantPct}%` }}
         />
 
-        {refTrack.tracks.slice(0, displayCount).map((meta, idx) => (
-          <TrackChart
-            key={`${meta.biosample_name}-${idx}`}
-            label={meta.biosample_name}
-            refValues={refByTrack[idx]}
-            altValues={altByTrack[idx]}
-          />
+        {visibleGroups.map((g) => (
+          <div key={g.tissue} className="space-y-2">
+            {multiTissue && (
+              <div className="text-[11px] font-medium text-muted-foreground pl-1">
+                {g.tissue}
+              </div>
+            )}
+            {g.indices.map((idx) => {
+              const meta = refTrack.tracks[idx];
+              const ref = refByTrack[idx];
+              const alt = altByTrack[idx];
+              if (!ref || ref.length === 0) {
+                return (
+                  <div
+                    key={`${meta.biosample_name}-${idx}`}
+                    className="text-[11px] text-muted-foreground italic px-2"
+                  >
+                    {meta.biosample_name}: no signal
+                  </div>
+                );
+              }
+              return (
+                <TrackChart
+                  key={`${meta.biosample_name}-${idx}`}
+                  label={meta.biosample_name}
+                  refValues={ref}
+                  altValues={alt}
+                />
+              );
+            })}
+          </div>
         ))}
       </div>
 

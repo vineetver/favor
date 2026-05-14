@@ -1,4 +1,5 @@
 import { API_BASE } from "@/config/api";
+import { parseVariantTrackResult } from "./parse";
 import type {
   IntervalScoreRequest,
   IntervalScoreResult,
@@ -32,21 +33,31 @@ function parseLooseJson<T>(text: string): T {
   );
 }
 
+/** Strip query string + auth params from a URL before logging. */
+function safeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return url.split("?")[0] || url;
+  }
+}
+
 /**
  * Read a Response body as parsed JSON, tolerating NaN/Infinity.
  *
  * On failure (empty body, HTML error page, malformed JSON) throws an Error
  * carrying enough context to debug without opening devtools: the labelled
- * step, request URL, status, content-type, body length, and first ~200
- * chars of the response.
+ * step, request URL (auth-stripped), status, content-type, body length,
+ * and first ~200 chars of the response.
  */
 async function readJson<T>(response: Response, label: string): Promise<T> {
   const text = await response.text().catch(() => "");
   const ct = response.headers.get("content-type") ?? "(none)";
-  const ctx = `${label} | ${response.status} ${response.url} | content-type=${ct} | bytes=${text.length}`;
+  const ctx = `${response.status} ${safeUrl(response.url)} | content-type=${ct} | bytes=${text.length}`;
 
   if (text.length === 0) {
-    throw new Error(`${label}: empty response body (${ctx})`);
+    throw new Error(`${label}: empty response body | ${ctx}`);
   }
   try {
     return parseLooseJson<T>(text);
@@ -54,7 +65,7 @@ async function readJson<T>(response: Response, label: string): Promise<T> {
     const excerpt = text.slice(0, 200).replace(/\s+/g, " ");
     const reason = e instanceof Error ? e.message : String(e);
     throw new Error(
-      `${label}: invalid JSON (${reason}) — ${ctx} | body[0..200]="${excerpt}"`,
+      `${label}: invalid JSON (${reason}) | ${ctx} | body[0..200]="${excerpt}"`,
     );
   }
 }
@@ -134,10 +145,10 @@ async function fetchPrediction<T>(
     if (!poll.ok) {
       const body = await poll.text().catch(() => "");
       throw new Error(
-        `Poll failed: ${poll.status} ${poll.statusText} | url=${job.poll_url} | body[0..200]="${body.slice(0, 200).replace(/\s+/g, " ")}"`,
+        `Poll failed: ${poll.status} ${poll.statusText} | url=${safeUrl(job.poll_url)} | body[0..200]="${body.slice(0, 200).replace(/\s+/g, " ")}"`,
       );
     }
-    job = await readJson<JobResponse>(poll, `GET ${job.poll_url}`);
+    job = await readJson<JobResponse>(poll, `GET ${safeUrl(job.poll_url)}`);
   }
 
   if (job.status === "failed") {
@@ -158,39 +169,67 @@ async function fetchPrediction<T>(
   }
 
   if (!artifact.ok) {
+    const body = await artifact.text().catch(() => "");
     throw new Error(
       artifact.status === 404
         ? "Prediction artifact not found — the model may still be computing"
-        : `Failed to fetch prediction artifact (${artifact.status})`,
+        : `Artifact fetch failed: ${artifact.status} ${artifact.statusText} | url=${safeUrl(url)} | body[0..200]="${body.slice(0, 200).replace(/\s+/g, " ")}"`,
     );
   }
 
-  // S3 may serve raw gzip without Content-Encoding header
-  const ct = artifact.headers.get("content-type") ?? "";
-  if (ct.includes("gzip") || ct === "application/octet-stream") {
-    let decompressed: Response;
+  // Buffer the whole response, then decide what to do based on the actual
+  // bytes — not the headers. Headers lie (Content-Encoding auto-decoded by
+  // the browser, missing Content-Type, etc.); the bytes do not.
+  let bytes = new Uint8Array(await artifact.arrayBuffer());
+  if (bytes.length === 0) {
+    throw new Error(`Artifact empty (0 bytes) | url=${safeUrl(url)}`);
+  }
+
+  // Gzip magic header is 0x1f 0x8b. If present, decompress; otherwise the
+  // body is already plain JSON (browser auto-decoded, or server sent it raw).
+  if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
     try {
-      const ds = new DecompressionStream("gzip");
-      decompressed = new Response(artifact.body?.pipeThrough(ds));
+      bytes = new Uint8Array(
+        await new Response(
+          new Blob([bytes])
+            .stream()
+            .pipeThrough(new DecompressionStream("gzip")),
+        ).arrayBuffer(),
+      );
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
       throw new Error(
-        `Artifact gzip decompression failed (${reason}) — url=${url}`,
+        `Artifact gzip decompression failed (${reason}) | url=${safeUrl(url)}`,
       );
     }
-    const data = await readJson<T>(decompressed, `Artifact (gzip) ${url}`);
-    return { data, cached };
+    if (bytes.length === 0) {
+      throw new Error(`Artifact decompressed to 0 bytes | url=${safeUrl(url)}`);
+    }
   }
 
-  const data = await readJson<T>(artifact, `Artifact ${url}`);
-  return { data, cached };
+  const text = new TextDecoder().decode(bytes);
+  try {
+    return { data: parseLooseJson<T>(text), cached };
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    const excerpt = text.slice(0, 200).replace(/\s+/g, " ");
+    throw new Error(
+      `Artifact JSON parse failed (${reason}) | url=${safeUrl(url)} | bytes=${text.length} | body[0..200]="${excerpt}"`,
+    );
+  }
 }
 
-export function predictVariantTracks(
+export async function predictVariantTracks(
   req: VariantTrackRequest,
   signal?: AbortSignal,
 ): Promise<Prediction<VariantTrackResult>> {
-  return fetchPrediction("variant", req, signal);
+  const { data, cached } = await fetchPrediction<unknown>(
+    "variant",
+    req,
+    signal,
+  );
+  // Parse at the boundary — render trusts the type from here on.
+  return { data: parseVariantTrackResult(data), cached };
 }
 
 export function predictScores(
